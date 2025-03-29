@@ -271,7 +271,7 @@ export default function Stories() {
                   </div>
                   <div className="flex gap-2">
                     <Link
-                      to={`/tests/${test.id}`}
+                      to={`/stories/${story.id}/run?testIndex=${story.tests.findIndex(t => t.id === test.id)}`}
                       className="text-blue-500 hover:text-blue-700"
                     >
                       Run Test

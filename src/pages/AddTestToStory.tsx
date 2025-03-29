@@ -1,44 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-interface Test {
+interface TestTemplate {
   id: string;
   title: string;
   template: string;
-  status: 'not_tested' | 'passed' | 'failed';
+  sections: {
+    name: string;
+    description: string;
+  }[];
+  createdAt: string;
 }
 
-interface Template {
+interface StoryTest {
   id: string;
-  name: string;
-  description: string;
+  title: string;
+  template: string;
+  templateId: string;
+  status: 'not_tested' | 'passed' | 'failed';
 }
 
 export default function AddTestToStory() {
   const { storyId } = useParams<{ storyId: string }>();
   const navigate = useNavigate();
-
-  // In a real app, these would come from your backend
-  const [templates] = useState<Template[]>([
-    { id: "1", name: "Login Flow", description: "Standard login process testing" },
-    { id: "2", name: "Checkout Process", description: "E-commerce checkout flow testing" },
-    { id: "3", name: "Product Search", description: "Product search and filtering" },
-    { id: "4", name: "User Profile", description: "User profile management" }
-  ]);
-
-  const [newTest, setNewTest] = useState<Partial<Test>>({
+  const [templates, setTemplates] = useState<TestTemplate[]>([]);
+  const [newTest, setNewTest] = useState<Partial<StoryTest>>({
     title: "",
     template: "",
+    templateId: "",
     status: 'not_tested'
   });
 
-  const handleSubmit = () => {
-    if (!newTest.title || !newTest.template) return;
+  // Load templates from localStorage on component mount
+  useEffect(() => {
+    const savedTests = localStorage.getItem('tests');
+    if (savedTests) {
+      setTemplates(JSON.parse(savedTests));
+    }
+  }, []);
 
-    const test: Test = {
+  const handleSubmit = () => {
+    if (!newTest.title || !newTest.templateId) return;
+
+    const selectedTemplate = templates.find(t => t.id === newTest.templateId);
+    if (!selectedTemplate) return;
+
+    const test: StoryTest = {
       id: Date.now().toString(),
       title: newTest.title,
-      template: newTest.template,
+      template: selectedTemplate.template,
+      templateId: selectedTemplate.id,
       status: 'not_tested'
     };
 
@@ -94,14 +105,21 @@ export default function AddTestToStory() {
             <div>
               <label className="block text-sm font-medium text-gray-700">Template</label>
               <select
-                value={newTest.template}
-                onChange={(e) => setNewTest(prev => ({ ...prev, template: e.target.value }))}
+                value={newTest.templateId}
+                onChange={(e) => {
+                  const template = templates.find(t => t.id === e.target.value);
+                  setNewTest(prev => ({
+                    ...prev,
+                    templateId: e.target.value,
+                    template: template?.template || ''
+                  }));
+                }}
                 className="mt-1 block w-full border rounded-md shadow-sm p-2"
               >
                 <option value="">Select a template</option>
                 {templates.map(template => (
-                  <option key={template.id} value={template.name}>
-                    {template.name}
+                  <option key={template.id} value={template.id}>
+                    {template.title}
                   </option>
                 ))}
               </select>

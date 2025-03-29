@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 
 interface Section {
   name: string;
@@ -19,10 +19,11 @@ interface TestTemplate {
   createdAt: string;
 }
 
-interface Test {
+interface StoryTest {
   id: string;
   title: string;
   template: string;
+  templateId: string; // Reference to the original test template
   sections: Section[];
   status: 'not_tested' | 'passed' | 'failed';
 }
@@ -31,12 +32,13 @@ interface Story {
   id: string;
   title: string;
   description: string;
-  tests: Test[];
+  tests: StoryTest[];
   createdAt: string;
 }
 
 export default function RunStory() {
   const { storyId } = useParams<{ storyId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [story, setStory] = useState<Story | null>(null);
   const [currentTestIndex, setCurrentTestIndex] = useState(0);
@@ -54,13 +56,13 @@ export default function RunStory() {
       // Merge test template data with story test data
       const storyWithTestData = {
         ...foundStory,
-        tests: foundStory.tests.map((storyTest: Test) => {
-          const template = savedTests.find((t: TestTemplate) => t.id === storyTest.id);
+        tests: foundStory.tests.map((storyTest: StoryTest) => {
+          const template = savedTests.find((t: TestTemplate) => t.id === storyTest.templateId);
           console.log('Story test:', storyTest);
           console.log('Found template:', template);
 
           if (!template) {
-            console.warn(`No template found for test ${storyTest.id}`);
+            console.warn(`No template found for test ${storyTest.templateId}`);
             return {
               ...storyTest,
               sections: [],
@@ -68,6 +70,12 @@ export default function RunStory() {
             };
           }
 
+          // If the test already has sections with statuses, keep them
+          if (storyTest.sections && storyTest.sections.length > 0) {
+            return storyTest;
+          }
+
+          // Otherwise, create new sections from the template
           return {
             ...storyTest,
             sections: template.sections.map((section: { name: string; description: string }) => ({
@@ -81,11 +89,20 @@ export default function RunStory() {
       };
       console.log('Story with test data:', storyWithTestData);
       setStory(storyWithTestData);
+
+      // Set initial test index from URL if provided
+      const testIndex = searchParams.get('testIndex');
+      if (testIndex !== null) {
+        const index = parseInt(testIndex, 10);
+        if (!isNaN(index) && index >= 0 && index < storyWithTestData.tests.length) {
+          setCurrentTestIndex(index);
+        }
+      }
     } else {
       console.warn('No story found with ID:', storyId);
       navigate('/stories');
     }
-  }, [storyId, navigate]);
+  }, [storyId, navigate, searchParams]);
 
   const updateSectionStatus = (testId: string, sectionIndex: number, status: 'not_tested' | 'passed' | 'failed') => {
     if (!story) return;
@@ -132,14 +149,14 @@ export default function RunStory() {
     setStory(updatedStory);
   };
 
-  const getTestStatus = (sections: Section[]): Test['status'] => {
+  const getTestStatus = (sections: Section[]): StoryTest['status'] => {
     if (!sections || sections.length === 0) return 'not_tested';
     if (sections.some(s => s.status === 'failed')) return 'failed';
     if (sections.every(s => s.status === 'passed')) return 'passed';
     return 'not_tested';
   };
 
-  const getStatusColor = (status: Test['status']) => {
+  const getStatusColor = (status: StoryTest['status']) => {
     switch (status) {
       case 'passed':
         return 'text-green-500';
@@ -150,7 +167,7 @@ export default function RunStory() {
     }
   };
 
-  const getStatusIcon = (status: Test['status']) => {
+  const getStatusIcon = (status: StoryTest['status']) => {
     switch (status) {
       case 'passed':
         return '✓';
@@ -230,11 +247,61 @@ export default function RunStory() {
             </div>
 
             <div className="border-b pb-4 mb-4">
-              <h4 className="text-lg font-semibold">{currentTest.title}</h4>
-              <p className="text-gray-600">Template: {currentTest.template}</p>
-              <span className={`${getStatusColor(currentTest.status)}`}>
-                {getStatusIcon(currentTest.status)} {currentTest.status.replace('_', ' ')}
-              </span>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="text-lg font-semibold">{currentTest.title}</h4>
+                  <p className="text-gray-600">Template: {currentTest.template}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        if (!story) return;
+                        const updatedStory = {
+                          ...story,
+                          tests: story.tests.map(test =>
+                            test.id === currentTest.id
+                              ? { ...test, status: 'passed' as const }
+                              : test
+                          )
+                        };
+                        setStory(updatedStory);
+                      }}
+                      className={`px-3 py-1 rounded ${
+                        currentTest.status === 'passed'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-green-100 text-green-700 hover:bg-green-200'
+                      }`}
+                    >
+                      Pass Test
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!story) return;
+                        const updatedStory = {
+                          ...story,
+                          tests: story.tests.map(test =>
+                            test.id === currentTest.id
+                              ? { ...test, status: 'failed' as const }
+                              : test
+                          )
+                        };
+                        setStory(updatedStory);
+                      }}
+                      className={`px-3 py-1 rounded ${
+                        currentTest.status === 'failed'
+                          ? 'bg-red-500 text-white'
+                          : 'bg-red-100 text-red-700 hover:bg-red-200'
+                      }`}
+                    >
+                      Fail Test
+                    </button>
+                  </div>
+                  <span className={`${getStatusColor(currentTest.status)}`}>
+                    {getStatusIcon(currentTest.status)} {currentTest.status.replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
