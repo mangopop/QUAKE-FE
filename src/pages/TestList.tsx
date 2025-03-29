@@ -36,12 +36,12 @@ export default function TestList() {
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Test Templates</h2>
+        <h2 className="text-xl font-bold">Tests</h2>
         <Link
           to="/tests/new"
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
-          Create New Template
+          Create New Test
         </Link>
       </div>
 
@@ -51,7 +51,7 @@ export default function TestList() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-lg font-semibold">{test.title}</h3>
-                <p className="text-gray-600">Template: {test.template}</p>
+                <p className="text-gray-600">Type: {test.template}</p>
                 <p className="text-sm text-gray-500">
                   Created: {new Date(test.createdAt).toLocaleDateString()}
                 </p>

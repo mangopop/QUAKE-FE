@@ -59,7 +59,7 @@ export default function NewTestEntry() {
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Create New Test Template</h2>
+        <h2 className="text-xl font-bold">Create New Test</h2>
         <button
           onClick={() => navigate("/tests")}
           className="text-gray-600 hover:text-gray-800"
@@ -97,7 +97,7 @@ export default function NewTestEntry() {
           onClick={handleSubmit}
           className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
         >
-          Create Template
+          Create Test
         </button>
       </div>
     </div>
