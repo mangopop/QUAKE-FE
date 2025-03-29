@@ -16,9 +16,16 @@ interface Story {
   createdAt: string;
 }
 
+type SortField = 'title' | 'tests' | 'created';
+type SortOrder = 'asc' | 'desc';
+
 export default function Stories() {
   const [stories, setStories] = useState<Story[]>([]);
   const [showNewStoryForm, setShowNewStoryForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>('title');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [newStory, setNewStory] = useState<Partial<Story>>({
     title: "",
     description: "",
@@ -148,6 +155,29 @@ export default function Stories() {
     return 'not_tested';
   };
 
+  // Filter and sort stories
+  const filteredAndSortedStories = stories
+    .filter(story => {
+      const matchesSearch = story.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           story.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const storyStatus = getStoryStatus(story);
+      const matchesStatus = selectedStatus === "all" || storyStatus === selectedStatus;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const multiplier = sortOrder === 'asc' ? 1 : -1;
+      switch (sortField) {
+        case 'title':
+          return multiplier * a.title.localeCompare(b.title);
+        case 'tests':
+          return multiplier * (a.tests.length - b.tests.length);
+        case 'created':
+          return multiplier * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        default:
+          return 0;
+      }
+    });
+
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
@@ -158,6 +188,47 @@ export default function Stories() {
         >
           Create New Story
         </button>
+      </div>
+
+      <div className="mb-6 flex gap-4 items-center">
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Search stories..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full border rounded-md p-2"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Status:</label>
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="border rounded-md p-2"
+          >
+            <option value="all">All Statuses</option>
+            <option value="passed">Passed</option>
+            <option value="failed">Failed</option>
+            <option value="not_tested">Not Tested</option>
+          </select>
+          <label className="text-sm font-medium">Sort by:</label>
+          <select
+            value={sortField}
+            onChange={(e) => setSortField(e.target.value as SortField)}
+            className="border rounded-md p-2"
+          >
+            <option value="title">Title</option>
+            <option value="tests">Number of Tests</option>
+            <option value="created">Created Date</option>
+          </select>
+          <button
+            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            className="border p-2 rounded"
+          >
+            {sortOrder === 'asc' ? '↑' : '↓'}
+          </button>
+        </div>
       </div>
 
       {showNewStoryForm && (
@@ -207,7 +278,7 @@ export default function Stories() {
       )}
 
       <div className="space-y-6">
-        {stories.map((story) => (
+        {filteredAndSortedStories.map((story) => (
           <div key={story.id} className="border rounded-lg p-4 shadow-sm bg-white">
             <div className="flex justify-between items-start mb-4">
               <div>
