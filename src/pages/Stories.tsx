@@ -62,12 +62,30 @@ export default function Stories() {
                       id: "1",
                       title: "Email Registration",
                       template: "Login Flow",
+                      templateId: "login-flow",
+                      sections: [
+                        {
+                          name: "Email Input",
+                          description: "Enter valid email address",
+                          status: "passed",
+                          notes: ""
+                        }
+                      ],
                       status: 'passed'
                     },
                     {
                       id: "2",
                       title: "Profile Setup",
                       template: "User Profile",
+                      templateId: "user-profile",
+                      sections: [
+                        {
+                          name: "Profile Form",
+                          description: "Fill out profile information",
+                          status: "not_tested",
+                          notes: ""
+                        }
+                      ],
                       status: 'not_tested'
                     }
                   ],
@@ -91,12 +109,30 @@ export default function Stories() {
                       id: "3",
                       title: "Product Selection",
                       template: "Product Search",
+                      templateId: "product-search",
+                      sections: [
+                        {
+                          name: "Search Products",
+                          description: "Search for products",
+                          status: "passed",
+                          notes: ""
+                        }
+                      ],
                       status: 'passed'
                     },
                     {
                       id: "4",
                       title: "Checkout Process",
                       template: "Checkout Process",
+                      templateId: "checkout-process",
+                      sections: [
+                        {
+                          name: "Payment",
+                          description: "Complete payment process",
+                          status: "not_tested",
+                          notes: ""
+                        }
+                      ],
                       status: 'not_tested'
                     }
                   ],
@@ -226,7 +262,12 @@ export default function Stories() {
 
   const handleSelectFolder = (folder: StoryFolder) => {
     console.log('Selecting folder:', folder);
-    setSelectedFolder(folder);
+    // If clicking the same folder that's already selected, deselect it
+    if (selectedFolder?.id === folder.id) {
+      setSelectedFolder(null);
+    } else {
+      setSelectedFolder(folder);
+    }
   };
 
   const getStatusColor = (status: Test['status']) => {
