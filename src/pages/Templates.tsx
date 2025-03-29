@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TemplateNav from "../components/TemplateNav";
 import CategoryManager from "../components/CategoryManager";
 
@@ -18,30 +18,47 @@ type SortField = 'name' | 'category' | 'sections';
 type SortOrder = 'asc' | 'desc';
 
 export default function Templates() {
-  const [templates, setTemplates] = useState<Template[]>([
-    {
-      id: "1",
-      name: "Login Flow",
-      description: "Standard login process testing",
-      category: "Authentication",
-      sections: [
-        { name: "Username Input", description: "Test username validation" },
-        { name: "Password Input", description: "Test password validation" },
-        { name: "Login Button", description: "Test login submission" }
-      ]
-    },
-    {
-      id: "2",
-      name: "Checkout Process",
-      description: "E-commerce checkout flow testing",
-      category: "E-commerce",
-      sections: [
-        { name: "Cart Summary", description: "Verify cart contents" },
-        { name: "Payment Form", description: "Test payment processing" },
-        { name: "Order Confirmation", description: "Verify order completion" }
-      ]
+  const [templates, setTemplates] = useState<Template[]>([]);
+
+  // Load templates from localStorage on component mount
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem('templates');
+    console.log('Loading templates from localStorage:', savedTemplates);
+    if (savedTemplates) {
+      const parsedTemplates = JSON.parse(savedTemplates);
+      console.log('Parsed templates:', parsedTemplates);
+      setTemplates(parsedTemplates);
+    } else {
+      // Initialize with default templates if none exist
+      const defaultTemplates: Template[] = [
+        {
+          id: "1",
+          name: "Login Flow",
+          description: "Standard login process testing",
+          category: "Authentication",
+          sections: [
+            { name: "Username Input", description: "Test username validation" },
+            { name: "Password Input", description: "Test password validation" },
+            { name: "Login Button", description: "Test login submission" }
+          ]
+        },
+        {
+          id: "2",
+          name: "Checkout Process",
+          description: "E-commerce checkout flow testing",
+          category: "E-commerce",
+          sections: [
+            { name: "Cart Summary", description: "Verify cart contents" },
+            { name: "Payment Form", description: "Test payment processing" },
+            { name: "Order Confirmation", description: "Verify order completion" }
+          ]
+        }
+      ];
+      console.log('Setting default templates:', defaultTemplates);
+      setTemplates(defaultTemplates);
+      localStorage.setItem('templates', JSON.stringify(defaultTemplates));
     }
-  ]);
+  }, []); // Only run once on mount
 
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [formMode, setFormMode] = useState<TemplateFormMode>('create');
@@ -87,10 +104,19 @@ export default function Templates() {
       sections: newTemplate.sections || []
     };
 
+    console.log('Submitting template:', template);
+    console.log('Current templates before update:', templates);
+
     if (formMode === 'create') {
-      setTemplates(prev => [...prev, template]);
+      const updatedTemplates = [...templates, template];
+      console.log('Updated templates after create:', updatedTemplates);
+      setTemplates(updatedTemplates);
+      localStorage.setItem('templates', JSON.stringify(updatedTemplates));
     } else {
-      setTemplates(prev => prev.map(t => t.id === template.id ? template : t));
+      const updatedTemplates = templates.map(t => t.id === template.id ? template : t);
+      console.log('Updated templates after edit:', updatedTemplates);
+      setTemplates(updatedTemplates);
+      localStorage.setItem('templates', JSON.stringify(updatedTemplates));
     }
 
     resetForm();
@@ -105,7 +131,10 @@ export default function Templates() {
 
   const handleDelete = (templateId: string) => {
     if (window.confirm('Are you sure you want to delete this template?')) {
-      setTemplates(prev => prev.filter(t => t.id !== templateId));
+      const updatedTemplates = templates.filter(t => t.id !== templateId);
+      console.log('Updated templates after delete:', updatedTemplates);
+      setTemplates(updatedTemplates);
+      localStorage.setItem('templates', JSON.stringify(updatedTemplates));
     }
   };
 
@@ -115,7 +144,10 @@ export default function Templates() {
       id: Date.now().toString(),
       name: `${template.name} (Copy)`
     };
-    setTemplates(prev => [...prev, newTemplate]);
+    const updatedTemplates = [...templates, newTemplate];
+    console.log('Updated templates after duplicate:', updatedTemplates);
+    setTemplates(updatedTemplates);
+    localStorage.setItem('templates', JSON.stringify(updatedTemplates));
   };
 
   const resetForm = () => {

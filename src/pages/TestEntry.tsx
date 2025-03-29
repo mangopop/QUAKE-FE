@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Section from "../components/Section";
 import TemplateSelect from "../components/TemplateSelect";
@@ -11,6 +11,7 @@ interface Section {
 interface Template {
   id: string;
   name: string;
+  sections: Section[];
 }
 
 export default function NewTestEntry() {
@@ -18,10 +19,18 @@ export default function NewTestEntry() {
   const [title, setTitle] = useState("");
   const [template, setTemplate] = useState("");
   const [sections, setSections] = useState<Section[]>([]);
-  const templates: Template[] = [
-    { id: "1", name: "Login Flow" },
-    { id: "2", name: "Checkout Process" }
-  ];
+  const [templates, setTemplates] = useState<Template[]>([]);
+
+  // Load templates from localStorage
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem('templates');
+    console.log('Loading templates from localStorage:', savedTemplates);
+    if (savedTemplates) {
+      const parsedTemplates = JSON.parse(savedTemplates);
+      console.log('Parsed templates:', parsedTemplates);
+      setTemplates(parsedTemplates);
+    }
+  }, []);
 
   const addSection = () => {
     setSections([...sections, { name: "", description: "" }]);
@@ -32,6 +41,19 @@ export default function NewTestEntry() {
       i === index ? { ...section, [key]: value } : section
     );
     setSections(newSections);
+  };
+
+  const handleTemplateChange = (templateId: string) => {
+    setTemplate(templateId);
+    const selectedTemplate = templates.find(t => t.id === templateId);
+    if (selectedTemplate) {
+      setSections(selectedTemplate.sections.map(section => ({
+        ...section,
+        description: section.description
+      })));
+    } else {
+      setSections([]);
+    }
   };
 
   const handleSubmit = () => {
@@ -75,7 +97,7 @@ export default function NewTestEntry() {
         onChange={(e) => setTitle(e.target.value)}
         className="border p-2 rounded w-full mb-2"
       />
-      <TemplateSelect template={template} setTemplate={setTemplate} templates={templates} />
+      <TemplateSelect template={template} setTemplate={handleTemplateChange} templates={templates} />
       <div className="mb-4">
         {sections.map((section, index) => (
           <Section
