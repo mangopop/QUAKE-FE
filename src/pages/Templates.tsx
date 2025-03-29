@@ -386,15 +386,16 @@ export default function Templates() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="space-y-4">
         {filteredAndSortedTemplates.map((template) => (
           <div key={template.id} className="border rounded-lg p-4 shadow-sm bg-white">
-            <div className="flex justify-between items-start mb-2">
+            <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-lg font-semibold">{template.name}</h3>
                 <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
                   {template.category}
                 </span>
+                <p className="text-gray-600 mt-2">{template.description}</p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -417,12 +418,13 @@ export default function Templates() {
                 </button>
               </div>
             </div>
-            <p className="text-gray-600 mb-4">{template.description}</p>
+
             <div className="space-y-2">
+              <h4 className="font-medium">Sections</h4>
               {template.sections.map((section, index) => (
                 <div key={index} className="border-t pt-2">
-                  <h4 className="font-medium">{section.name}</h4>
-                  <p className="text-sm text-gray-600">{section.description}</p>
+                  <div className="font-medium">{section.name}</div>
+                  <p className="text-gray-600">{section.description}</p>
                 </div>
               ))}
             </div>
