@@ -1,40 +1,36 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-
-interface Section {
-  name: string;
-  description: string;
-  status: 'not_tested' | 'passed' | 'failed';
-  notes: string;
-}
+import { StoryFolder, Story, Test } from "../types/story";
 
 interface TestTemplate {
   id: string;
-  title: string;
-  template: string;
+  name: string;
+  description: string;
+  category: string;
   sections: {
     name: string;
     description: string;
   }[];
-  createdAt: string;
 }
 
-interface StoryTest {
-  id: string;
-  title: string;
-  template: string;
-  templateId: string; // Reference to the original test template
-  sections: Section[];
-  status: 'not_tested' | 'passed' | 'failed';
-}
+// Function to find a story in the folder tree
+const findStoryInFolder = (folder: StoryFolder, targetStoryId: string): Story | null => {
+  // Check stories in current folder
+  const storyInCurrentFolder = folder.stories.find(s => s.id === targetStoryId);
+  if (storyInCurrentFolder) {
+    return storyInCurrentFolder;
+  }
 
-interface Story {
-  id: string;
-  title: string;
-  description: string;
-  tests: StoryTest[];
-  createdAt: string;
-}
+  // Check subfolders
+  for (const subfolder of folder.subfolders) {
+    const foundStory = findStoryInFolder(subfolder, targetStoryId);
+    if (foundStory) {
+      return foundStory;
+    }
+  }
+
+  return null;
+};
 
 export default function RunStory() {
   const { storyId } = useParams<{ storyId: string }>();
@@ -45,40 +41,45 @@ export default function RunStory() {
 
   // Load story and test templates from localStorage on component mount
   useEffect(() => {
-    const savedStories = JSON.parse(localStorage.getItem('stories') || '[]');
-    const savedTests = JSON.parse(localStorage.getItem('tests') || '[]');
-    const foundStory = savedStories.find((s: Story) => s.id === storyId);
+    const savedStories = localStorage.getItem('stories');
+    const savedTemplates = localStorage.getItem('templates');
+
+    if (!savedStories || !storyId || !savedTemplates) return;
+
+    const rootFolder: StoryFolder = JSON.parse(savedStories);
+    const templates: TestTemplate[] = JSON.parse(savedTemplates);
+    const foundStory = findStoryInFolder(rootFolder, storyId);
 
     if (foundStory) {
       console.log('Found story:', foundStory);
-      console.log('Saved tests:', savedTests);
+      console.log('Saved templates:', templates);
 
       // Merge test template data with story test data
       const storyWithTestData = {
         ...foundStory,
-        tests: foundStory.tests.map((storyTest: StoryTest) => {
-          const template = savedTests.find((t: TestTemplate) => t.id === storyTest.templateId);
-          console.log('Story test:', storyTest);
+        tests: foundStory.tests.map((test: Test) => {
+          const template = templates.find(t => t.id === test.templateId);
+          console.log('Story test:', test);
           console.log('Found template:', template);
 
           if (!template) {
-            console.warn(`No template found for test ${storyTest.templateId}`);
+            console.warn(`No template found for test ${test.templateId}`);
             return {
-              ...storyTest,
+              ...test,
               sections: [],
               status: 'not_tested' as const
             };
           }
 
           // If the test already has sections with statuses, keep them
-          if (storyTest.sections && storyTest.sections.length > 0) {
-            return storyTest;
+          if (test.sections && test.sections.length > 0) {
+            return test;
           }
 
           // Otherwise, create new sections from the template
           return {
-            ...storyTest,
-            sections: template.sections.map((section: { name: string; description: string }) => ({
+            ...test,
+            sections: template.sections.map(section => ({
               ...section,
               status: 'not_tested' as const,
               notes: ''
@@ -99,17 +100,17 @@ export default function RunStory() {
         }
       }
     } else {
-      console.warn('No story found with ID:', storyId);
+      console.error('Story not found:', storyId);
       navigate('/stories');
     }
-  }, [storyId, navigate, searchParams]);
+  }, [storyId, searchParams, navigate]);
 
   const updateSectionStatus = (testId: string, sectionIndex: number, status: 'not_tested' | 'passed' | 'failed') => {
     if (!story) return;
 
-    const updatedStory = {
+    setStory({
       ...story,
-      tests: story.tests.map(test => {
+      tests: story.tests.map((test: Test) => {
         if (test.id === testId) {
           const updatedSections = test.sections.map((section, idx) =>
             idx === sectionIndex ? { ...section, status } : section
@@ -122,52 +123,47 @@ export default function RunStory() {
         }
         return test;
       })
-    };
-
-    setStory(updatedStory);
+    });
   };
 
   const updateSectionNotes = (testId: string, sectionIndex: number, notes: string) => {
     if (!story) return;
 
-    const updatedStory = {
+    setStory({
       ...story,
-      tests: story.tests.map(test => {
+      tests: story.tests.map((test: Test) => {
         if (test.id === testId) {
-          const updatedSections = test.sections.map((section, idx) =>
-            idx === sectionIndex ? { ...section, notes } : section
-          );
           return {
             ...test,
-            sections: updatedSections
+            sections: test.sections.map((section, idx) =>
+              idx === sectionIndex ? { ...section, notes } : section
+            )
           };
         }
         return test;
       })
-    };
-
-    setStory(updatedStory);
+    });
   };
 
-  const getTestStatus = (sections: Section[]): StoryTest['status'] => {
-    if (!sections || sections.length === 0) return 'not_tested';
-    if (sections.some(s => s.status === 'failed')) return 'failed';
+  const getTestStatus = (sections: Test['sections']): Test['status'] => {
+    if (sections.length === 0) return 'not_tested';
     if (sections.every(s => s.status === 'passed')) return 'passed';
+    if (sections.some(s => s.status === 'failed')) return 'failed';
     return 'not_tested';
   };
 
-  const getStatusColor = (status: StoryTest['status']) => {
+  const getStatusColor = (status: Test['status']) => {
     switch (status) {
       case 'passed':
-        return 'text-green-500';
+        return 'text-green-600';
       case 'failed':
-        return 'text-red-500';
+        return 'text-red-600';
       default:
-        return 'text-gray-500';
+        return 'text-gray-600';
     }
   };
 
-  const getStatusIcon = (status: StoryTest['status']) => {
+  const getStatusIcon = (status: Test['status']) => {
     switch (status) {
       case 'passed':
         return '✓';
@@ -181,120 +177,113 @@ export default function RunStory() {
   const handleSave = () => {
     if (!story) return;
 
-    // Get existing stories from localStorage
-    const existingStories = JSON.parse(localStorage.getItem('stories') || '[]');
+    // Get the root folder from localStorage
+    const savedStories = localStorage.getItem('stories');
+    if (!savedStories) return;
 
-    // Update the stories array with the updated story
-    const updatedStories = existingStories.map((s: Story) => {
-      if (s.id === story.id) {
-        return story;
+    const rootFolder: StoryFolder = JSON.parse(savedStories);
+
+    // Function to update story in folder
+    const updateStoryInFolder = (folder: StoryFolder, updatedStory: Story): StoryFolder => {
+      // Check if this folder contains the target story
+      const storyIndex = folder.stories.findIndex(s => s.id === updatedStory.id);
+      if (storyIndex !== -1) {
+        return {
+          ...folder,
+          stories: folder.stories.map((s, index) =>
+            index === storyIndex ? updatedStory : s
+          )
+        };
       }
-      return s;
-    });
 
-    // Save the updated stories back to localStorage
-    localStorage.setItem('stories', JSON.stringify(updatedStories));
+      // If not found in this folder, check subfolders
+      return {
+        ...folder,
+        subfolders: folder.subfolders.map(subfolder =>
+          updateStoryInFolder(subfolder, updatedStory)
+        )
+      };
+    };
+
+    // Update the story in the folder structure
+    const updatedRootFolder = updateStoryInFolder(rootFolder, story);
+
+    // Save the updated folder structure back to localStorage
+    localStorage.setItem('stories', JSON.stringify(updatedRootFolder));
 
     // Navigate back to the stories page
     navigate('/stories');
   };
 
   if (!story) {
-    return <div className="p-4">Loading...</div>;
+    return <div>Loading...</div>;
   }
 
   const currentTest = story.tests[currentTestIndex];
-  if (!currentTest) {
-    return <div className="p-4">No test found</div>;
-  }
 
   return (
     <div className="p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-xl font-bold">Running Story: {story.title}</h2>
-            <p className="text-gray-600">{story.description}</p>
+          <h2 className="text-xl font-bold">{story.title}</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Save Changes
+            </button>
+            <button
+              onClick={() => navigate('/stories')}
+              className="px-4 py-2 border rounded hover:bg-gray-50"
+            >
+              Cancel
+            </button>
           </div>
-          <button
-            onClick={handleSave}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Save Progress
-          </button>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Test {currentTestIndex + 1} of {story.tests.length}</h3>
-              <div className="flex gap-2">
+            <h3 className="text-lg font-medium mb-2">Test Navigation</h3>
+            <div className="flex gap-2 border-b">
+              {story.tests.map((test, index) => (
                 <button
-                  onClick={() => setCurrentTestIndex(prev => Math.max(0, prev - 1))}
-                  disabled={currentTestIndex === 0}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
+                  key={test.id}
+                  onClick={() => setCurrentTestIndex(index)}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                    index === currentTestIndex
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
                 >
-                  Previous
+                  {test.title}
                 </button>
-                <button
-                  onClick={() => setCurrentTestIndex(prev => Math.min(story.tests.length - 1, prev + 1))}
-                  disabled={currentTestIndex === story.tests.length - 1}
-                  className="px-3 py-1 border rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
+              ))}
             </div>
+          </div>
 
-            <div className="border-b pb-4 mb-4">
-              <div className="flex justify-between items-center">
+          {currentTest && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h4 className="text-lg font-semibold">{currentTest.title}</h4>
-                  <p className="text-gray-600">Template: {currentTest.template}</p>
+                  <h3 className="text-lg font-medium">{currentTest.title}</h3>
+                  <p className="text-sm text-gray-600">Test {currentTestIndex + 1} of {story.tests.length}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex gap-2">
                     <button
-                      onClick={() => {
-                        if (!story) return;
-                        const updatedStory = {
-                          ...story,
-                          tests: story.tests.map(test =>
-                            test.id === currentTest.id
-                              ? { ...test, status: 'passed' as const }
-                              : test
-                          )
-                        };
-                        setStory(updatedStory);
-                      }}
-                      className={`px-3 py-1 rounded ${
-                        currentTest.status === 'passed'
-                          ? 'bg-green-500 text-white'
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
-                      }`}
+                      onClick={() => setCurrentTestIndex(prev => Math.max(0, prev - 1))}
+                      disabled={currentTestIndex === 0}
+                      className="px-3 py-1 border rounded disabled:opacity-50"
                     >
-                      Pass Test
+                      Previous
                     </button>
                     <button
-                      onClick={() => {
-                        if (!story) return;
-                        const updatedStory = {
-                          ...story,
-                          tests: story.tests.map(test =>
-                            test.id === currentTest.id
-                              ? { ...test, status: 'failed' as const }
-                              : test
-                          )
-                        };
-                        setStory(updatedStory);
-                      }}
-                      className={`px-3 py-1 rounded ${
-                        currentTest.status === 'failed'
-                          ? 'bg-red-500 text-white'
-                          : 'bg-red-100 text-red-700 hover:bg-red-200'
-                      }`}
+                      onClick={() => setCurrentTestIndex(prev => Math.min(story.tests.length - 1, prev + 1))}
+                      disabled={currentTestIndex === story.tests.length - 1}
+                      className="px-3 py-1 border rounded disabled:opacity-50"
                     >
-                      Fail Test
+                      Next
                     </button>
                   </div>
                   <span className={`${getStatusColor(currentTest.status)}`}>
@@ -302,59 +291,47 @@ export default function RunStory() {
                   </span>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-4">
-              {currentTest.sections && currentTest.sections.length > 0 ? (
-                currentTest.sections.map((section, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-medium">{section.name}</span>
-                      <span className={`${getStatusColor(section.status)}`}>
-                        {getStatusIcon(section.status)}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-4">{section.description}</p>
-                    <div className="space-y-2">
+              <div className="space-y-4">
+                {currentTest.sections.map((section, index) => (
+                  <div key={index} className="border rounded p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium">{section.name}</h4>
                       <div className="flex gap-2">
                         <button
                           onClick={() => updateSectionStatus(currentTest.id, index, 'passed')}
-                          className={`px-3 py-1 rounded ${
+                          className={`px-2 py-1 rounded ${
                             section.status === 'passed'
                               ? 'bg-green-500 text-white'
-                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              : 'bg-gray-100 hover:bg-gray-200'
                           }`}
                         >
                           Pass
                         </button>
                         <button
                           onClick={() => updateSectionStatus(currentTest.id, index, 'failed')}
-                          className={`px-3 py-1 rounded ${
+                          className={`px-2 py-1 rounded ${
                             section.status === 'failed'
                               ? 'bg-red-500 text-white'
-                              : 'bg-red-100 text-red-700 hover:bg-red-200'
+                              : 'bg-gray-100 hover:bg-gray-200'
                           }`}
                         >
                           Fail
                         </button>
                       </div>
-                      <textarea
-                        value={section.notes}
-                        onChange={(e) => updateSectionNotes(currentTest.id, index, e.target.value)}
-                        placeholder="Add notes about this section..."
-                        className="w-full border rounded p-2 text-sm"
-                        rows={3}
-                      />
                     </div>
+                    <p className="text-gray-600 mb-2">{section.description}</p>
+                    <textarea
+                      value={section.notes}
+                      onChange={(e) => updateSectionNotes(currentTest.id, index, e.target.value)}
+                      className="w-full border rounded p-2"
+                      placeholder="Add notes..."
+                      rows={3}
+                    />
                   </div>
-                ))
-              ) : (
-                <div className="text-gray-500 text-center py-4">
-                  No sections found for this test
-                </div>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

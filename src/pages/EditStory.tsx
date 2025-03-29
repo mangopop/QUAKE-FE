@@ -1,20 +1,43 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { StoryFolder, Story, Test } from "../types/story";
 
-interface Test {
-  id: string;
-  title: string;
-  template: string;
-  status: 'not_tested' | 'passed' | 'failed';
-}
+// Function to find a story in the folder tree
+const findStoryInFolder = (folder: StoryFolder, targetStoryId: string): Story | null => {
+  // Check stories in current folder
+  const storyInCurrentFolder = folder.stories.find(s => s.id === targetStoryId);
+  if (storyInCurrentFolder) {
+    return storyInCurrentFolder;
+  }
 
-interface Story {
-  id: string;
-  title: string;
-  description: string;
-  tests: Test[];
-  createdAt: string;
-}
+  // Check subfolders
+  for (const subfolder of folder.subfolders) {
+    const foundStory = findStoryInFolder(subfolder, targetStoryId);
+    if (foundStory) {
+      return foundStory;
+    }
+  }
+
+  return null;
+};
+
+// Function to update a story in the folder tree
+const updateStoryInFolder = (folder: StoryFolder, updatedStory: Story): StoryFolder => {
+  // Check stories in current folder
+  const storyIndex = folder.stories.findIndex(s => s.id === updatedStory.id);
+  if (storyIndex !== -1) {
+    return {
+      ...folder,
+      stories: folder.stories.map((s, i) => i === storyIndex ? updatedStory : s)
+    };
+  }
+
+  // Check subfolders
+  return {
+    ...folder,
+    subfolders: folder.subfolders.map(subfolder => updateStoryInFolder(subfolder, updatedStory))
+  };
+};
 
 export default function EditStory() {
   const { storyId } = useParams<{ storyId: string }>();
@@ -23,8 +46,12 @@ export default function EditStory() {
 
   // Load story from localStorage on component mount
   useEffect(() => {
-    const savedStories = JSON.parse(localStorage.getItem('stories') || '[]');
-    const foundStory = savedStories.find((s: Story) => s.id === storyId);
+    const savedStories = localStorage.getItem('stories');
+    if (!savedStories || !storyId) return;
+
+    const rootFolder: StoryFolder = JSON.parse(savedStories);
+    const foundStory = findStoryInFolder(rootFolder, storyId);
+
     if (foundStory) {
       setStory(foundStory);
     } else {
@@ -36,18 +63,16 @@ export default function EditStory() {
     if (!story) return;
 
     // Get existing stories from localStorage
-    const existingStories = JSON.parse(localStorage.getItem('stories') || '[]');
+    const savedStories = localStorage.getItem('stories');
+    if (!savedStories) return;
 
-    // Update the stories array with the edited story
-    const updatedStories = existingStories.map((s: Story) => {
-      if (s.id === story.id) {
-        return story;
-      }
-      return s;
-    });
+    const rootFolder: StoryFolder = JSON.parse(savedStories);
 
-    // Save the updated stories back to localStorage
-    localStorage.setItem('stories', JSON.stringify(updatedStories));
+    // Update the story in the folder structure
+    const updatedFolder = updateStoryInFolder(rootFolder, story);
+
+    // Save the updated folder structure back to localStorage
+    localStorage.setItem('stories', JSON.stringify(updatedFolder));
 
     // Navigate back to the stories page
     navigate('/stories');
@@ -143,9 +168,10 @@ export default function EditStory() {
                 {story.tests.map((test) => (
                   <div key={test.id} className="flex items-center justify-between border-t pt-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{test.title}</span>
-                      <span className="text-sm text-gray-500">({test.template})</span>
-                      <span className={`${getStatusColor(test.status)}`}>
+                      <span className="text-lg font-medium text-gray-900 hover:text-blue-600 cursor-pointer">
+                        {test.title}
+                      </span>
+                      <span className={`${getStatusColor(test.status)} text-sm`}>
                         {getStatusIcon(test.status)}
                       </span>
                     </div>
