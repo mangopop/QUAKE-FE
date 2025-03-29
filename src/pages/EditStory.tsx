@@ -21,35 +21,35 @@ export default function EditStory() {
   const navigate = useNavigate();
   const [story, setStory] = useState<Story | null>(null);
 
-  // In a real app, this would fetch from your backend
+  // Load story from localStorage on component mount
   useEffect(() => {
-    // Simulated story data
-    const mockStory: Story = {
-      id: storyId || "",
-      title: "User Registration Flow",
-      description: "Complete user registration process including email verification and profile setup",
-      tests: [
-        {
-          id: "1",
-          title: "Email Registration",
-          template: "Login Flow",
-          status: 'passed'
-        },
-        {
-          id: "2",
-          title: "Profile Setup",
-          template: "User Profile",
-          status: 'not_tested'
-        }
-      ],
-      createdAt: "2024-03-20T10:00:00Z"
-    };
-    setStory(mockStory);
-  }, [storyId]);
+    const savedStories = JSON.parse(localStorage.getItem('stories') || '[]');
+    const foundStory = savedStories.find((s: Story) => s.id === storyId);
+    if (foundStory) {
+      setStory(foundStory);
+    } else {
+      navigate('/stories');
+    }
+  }, [storyId, navigate]);
 
   const handleSubmit = () => {
     if (!story) return;
-    // Here you would typically make an API call to update the story
+
+    // Get existing stories from localStorage
+    const existingStories = JSON.parse(localStorage.getItem('stories') || '[]');
+
+    // Update the stories array with the edited story
+    const updatedStories = existingStories.map((s: Story) => {
+      if (s.id === story.id) {
+        return story;
+      }
+      return s;
+    });
+
+    // Save the updated stories back to localStorage
+    localStorage.setItem('stories', JSON.stringify(updatedStories));
+
+    // Navigate back to the stories page
     navigate('/stories');
   };
 

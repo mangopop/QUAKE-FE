@@ -44,10 +44,16 @@ export default function NewTestEntry() {
       createdAt: new Date().toISOString()
     };
 
-    // Here you would typically save to your backend
-    console.log("Submitting test entry:", testEntry);
+    // Get existing tests from localStorage
+    const existingTests = JSON.parse(localStorage.getItem('tests') || '[]');
 
-    // Navigate back to the list view
+    // Add the new test to the array
+    const updatedTests = [...existingTests, testEntry];
+
+    // Save back to localStorage
+    localStorage.setItem('tests', JSON.stringify(updatedTests));
+
+    // Navigate to the test list view
     navigate("/tests");
   };
 

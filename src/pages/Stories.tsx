@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 interface Test {
@@ -17,55 +17,67 @@ interface Story {
 }
 
 export default function Stories() {
-  const [stories, setStories] = useState<Story[]>([
-    {
-      id: "1",
-      title: "User Registration Flow",
-      description: "Complete user registration process including email verification and profile setup",
-      tests: [
-        {
-          id: "1",
-          title: "Email Registration",
-          template: "Login Flow",
-          status: 'passed'
-        },
-        {
-          id: "2",
-          title: "Profile Setup",
-          template: "User Profile",
-          status: 'not_tested'
-        }
-      ],
-      createdAt: "2024-03-20T10:00:00Z"
-    },
-    {
-      id: "2",
-      title: "E-commerce Purchase Flow",
-      description: "Complete purchase process from product selection to order confirmation",
-      tests: [
-        {
-          id: "3",
-          title: "Product Selection",
-          template: "Product Search",
-          status: 'passed'
-        },
-        {
-          id: "4",
-          title: "Checkout Process",
-          template: "Checkout Process",
-          status: 'not_tested'
-        }
-      ],
-      createdAt: "2024-03-19T15:30:00Z"
-    }
-  ]);
-
+  const [stories, setStories] = useState<Story[]>([]);
   const [showNewStoryForm, setShowNewStoryForm] = useState(false);
   const [newStory, setNewStory] = useState<Partial<Story>>({
     title: "",
     description: "",
     tests: []
   });
+
+  // Load stories from localStorage on component mount
+  useEffect(() => {
+    const savedStories = localStorage.getItem('stories');
+    if (savedStories) {
+      setStories(JSON.parse(savedStories));
+    } else {
+      // Initialize with default stories if none exist
+      const defaultStories: Story[] = [
+        {
+          id: "1",
+          title: "User Registration Flow",
+          description: "Complete user registration process including email verification and profile setup",
+          tests: [
+            {
+              id: "1",
+              title: "Email Registration",
+              template: "Login Flow",
+              status: 'passed'
+            },
+            {
+              id: "2",
+              title: "Profile Setup",
+              template: "User Profile",
+              status: 'not_tested'
+            }
+          ],
+          createdAt: "2024-03-20T10:00:00Z"
+        },
+        {
+          id: "2",
+          title: "E-commerce Purchase Flow",
+          description: "Complete purchase process from product selection to order confirmation",
+          tests: [
+            {
+              id: "3",
+              title: "Product Selection",
+              template: "Product Search",
+              status: 'passed'
+            },
+            {
+              id: "4",
+              title: "Checkout Process",
+              template: "Checkout Process",
+              status: 'not_tested'
+            }
+          ],
+          createdAt: "2024-03-19T15:30:00Z"
+        }
+      ];
+      setStories(defaultStories);
+      localStorage.setItem('stories', JSON.stringify(defaultStories));
+    }
+  }, []);
 
   const handleSubmit = () => {
     if (!newStory.title || !newStory.description) return;
@@ -78,7 +90,9 @@ export default function Stories() {
       createdAt: new Date().toISOString()
     };
 
-    setStories(prev => [...prev, story]);
+    const updatedStories = [...stories, story];
+    setStories(updatedStories);
+    localStorage.setItem('stories', JSON.stringify(updatedStories));
     resetForm();
   };
 
@@ -96,11 +110,13 @@ export default function Stories() {
   };
 
   const removeTestFromStory = (storyId: string, testId: string) => {
-    setStories(prev => prev.map(story =>
+    const updatedStories = stories.map(story =>
       story.id === storyId
         ? { ...story, tests: story.tests.filter(test => test.id !== testId) }
         : story
-    ));
+    );
+    setStories(updatedStories);
+    localStorage.setItem('stories', JSON.stringify(updatedStories));
   };
 
   const getStatusColor = (status: Test['status']) => {
@@ -216,7 +232,9 @@ export default function Stories() {
                 <button
                   onClick={() => {
                     if (window.confirm('Are you sure you want to delete this story?')) {
-                      setStories(prev => prev.filter(s => s.id !== story.id));
+                      const updatedStories = stories.filter(s => s.id !== story.id);
+                      setStories(updatedStories);
+                      localStorage.setItem('stories', JSON.stringify(updatedStories));
                     }
                   }}
                   className="text-red-500 hover:text-red-700"

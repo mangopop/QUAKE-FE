@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Section {
   name: string;
@@ -20,83 +20,46 @@ type SortField = 'date' | 'title' | 'status';
 type SortOrder = 'asc' | 'desc';
 
 export default function TestList() {
-  const [testEntries, setTestEntries] = useState<TestEntry[]>([
-    {
-      id: "1",
-      title: "Login Flow Test",
-      template: "Login Flow",
-      sections: [
-        { name: "Username Input", status: 'passed', notes: "Validates correctly" },
-        { name: "Password Input", status: 'passed', notes: "Password strength indicator not showing" }
-      ],
-      createdAt: "2024-03-20T10:00:00Z"
-    },
-    {
-      id: "2",
-      title: "Checkout Process",
-      template: "E-commerce Flow",
-      sections: [
-        { name: "Cart Summary", status: 'passed', notes: "All items display correctly" },
-        { name: "Payment Form", status: 'not_tested', notes: "Need to test all card types" },
-        { name: "Order Confirmation", status: 'passed', notes: "Email sends successfully" }
-      ],
-      createdAt: "2024-03-19T15:30:00Z"
-    },
-    {
-      id: "3",
-      title: "User Registration",
-      template: "Account Management",
-      sections: [
-        { name: "Email Verification", status: 'failed', notes: "Verification link expired too quickly" },
-        { name: "Profile Setup", status: 'passed', notes: "All fields save correctly" },
-        { name: "Welcome Email", status: 'passed', notes: "Content and formatting verified" }
-      ],
-      createdAt: "2024-03-21T09:15:00Z"
-    },
-    {
-      id: "4",
-      title: "Product Search",
-      template: "Search functionality",
-      sections: [
-        { name: "Search Results", status: 'passed', notes: "Pagination working" },
-        { name: "Filters", status: 'failed', notes: "Price range filter not responding" },
-        { name: "Sort Options", status: 'not_tested', notes: "Need to verify all sort orders" }
-      ],
-      createdAt: "2024-03-18T11:45:00Z"
-    }
-  ]);
-
+  const [testEntries, setTestEntries] = useState<TestEntry[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
 
+  // Load tests from localStorage on component mount
+  useEffect(() => {
+    const savedTests = localStorage.getItem('tests');
+    if (savedTests) {
+      setTestEntries(JSON.parse(savedTests));
+    }
+  }, []);
+
   const updateSectionStatus = (testId: string, sectionIndex: number, newStatus: 'not_tested' | 'passed' | 'failed') => {
-    setTestEntries(entries =>
-      entries.map(test =>
-        test.id === testId
-          ? {
-              ...test,
-              sections: test.sections.map((section, idx) =>
-                idx === sectionIndex ? { ...section, status: newStatus } : section
-              )
-            }
-          : test
-      )
+    const updatedTests = testEntries.map(test =>
+      test.id === testId
+        ? {
+            ...test,
+            sections: test.sections.map((section, idx) =>
+              idx === sectionIndex ? { ...section, status: newStatus } : section
+            )
+          }
+        : test
     );
+    setTestEntries(updatedTests);
+    localStorage.setItem('tests', JSON.stringify(updatedTests));
   };
 
   const bulkUpdateStatus = (newStatus: 'not_tested' | 'passed' | 'failed') => {
-    setTestEntries(entries =>
-      entries.map(test =>
-        selectedTests.has(test.id)
-          ? {
-              ...test,
-              sections: test.sections.map(section => ({ ...section, status: newStatus }))
-            }
-          : test
-      )
+    const updatedTests = testEntries.map(test =>
+      selectedTests.has(test.id)
+        ? {
+            ...test,
+            sections: test.sections.map(section => ({ ...section, status: newStatus }))
+          }
+        : test
     );
+    setTestEntries(updatedTests);
+    localStorage.setItem('tests', JSON.stringify(updatedTests));
     setSelectedTests(new Set());
   };
 

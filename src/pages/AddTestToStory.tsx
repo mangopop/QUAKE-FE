@@ -42,8 +42,24 @@ export default function AddTestToStory() {
       status: 'not_tested'
     };
 
-    // Here you would typically make an API call to add the test to the story
-    // For now, we'll just navigate back to the stories page
+    // Get existing stories from localStorage
+    const existingStories = JSON.parse(localStorage.getItem('stories') || '[]');
+
+    // Update the stories array with the new test
+    const updatedStories = existingStories.map((story: any) => {
+      if (story.id === storyId) {
+        return {
+          ...story,
+          tests: [...story.tests, test]
+        };
+      }
+      return story;
+    });
+
+    // Save the updated stories back to localStorage
+    localStorage.setItem('stories', JSON.stringify(updatedStories));
+
+    // Navigate back to the stories page
     navigate('/stories');
   };
 
