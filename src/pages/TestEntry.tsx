@@ -5,8 +5,7 @@ import TemplateSelect from "../components/TemplateSelect";
 
 interface Section {
   name: string;
-  status: 'not_tested' | 'passed' | 'failed';
-  notes: string;
+  description: string;
 }
 
 interface Template {
@@ -25,10 +24,10 @@ export default function NewTestEntry() {
   ];
 
   const addSection = () => {
-    setSections([...sections, { name: "", status: 'not_tested', notes: "" }]);
+    setSections([...sections, { name: "", description: "" }]);
   };
 
-  const updateSection = (index: number, key: keyof Section, value: string | 'not_tested' | 'passed' | 'failed') => {
+  const updateSection = (index: number, key: keyof Section, value: string) => {
     const newSections = sections.map((section, i) =>
       i === index ? { ...section, [key]: value } : section
     );
@@ -37,7 +36,7 @@ export default function NewTestEntry() {
 
   const handleSubmit = () => {
     const testEntry = {
-      id: Date.now().toString(), // Temporary ID generation
+      id: Date.now().toString(),
       title,
       template,
       sections,
@@ -60,7 +59,7 @@ export default function NewTestEntry() {
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">New Test Entry</h2>
+        <h2 className="text-xl font-bold">Create New Test Template</h2>
         <button
           onClick={() => navigate("/tests")}
           className="text-gray-600 hover:text-gray-800"
@@ -98,7 +97,7 @@ export default function NewTestEntry() {
           onClick={handleSubmit}
           className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
         >
-          Submit Test
+          Create Template
         </button>
       </div>
     </div>

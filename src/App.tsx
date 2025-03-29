@@ -6,6 +6,7 @@ import Stories from "./pages/Stories";
 import AddTestToStory from "./pages/AddTestToStory";
 import EditStory from "./pages/EditStory";
 import RunTest from "./pages/RunTest";
+import RunStory from "./pages/RunStory";
 
 function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   const location = useLocation();
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/stories" element={<Stories />} />
             <Route path="/stories/:storyId/add-test" element={<AddTestToStory />} />
             <Route path="/stories/:storyId/edit" element={<EditStory />} />
+            <Route path="/stories/:storyId/run" element={<RunStory />} />
           </Routes>
         </main>
       </div>

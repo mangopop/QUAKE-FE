@@ -224,6 +224,12 @@ export default function Stories() {
               </div>
               <div className="flex gap-2">
                 <Link
+                  to={`/stories/${story.id}/run`}
+                  className="text-green-500 hover:text-green-700"
+                >
+                  Run Story
+                </Link>
+                <Link
                   to={`/stories/${story.id}/edit`}
                   className="text-blue-500 hover:text-blue-700"
                 >

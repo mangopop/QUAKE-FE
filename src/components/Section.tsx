@@ -1,43 +1,53 @@
 // Section.tsx
 interface SectionProps {
+  index: number;
   section: {
     name: string;
-    status: 'not_tested' | 'passed' | 'failed';
-    notes: string;
+    description: string;
   };
-  index: number;
-  updateSection: (index: number, key: keyof SectionProps['section'], value: string | 'not_tested' | 'passed' | 'failed') => void;
+  updateSection: (index: number, key: 'name' | 'description', value: string) => void;
 }
 
-export default function Section({ section, index, updateSection }: SectionProps) {
+export default function Section({ index, section, updateSection }: SectionProps) {
   return (
-    <div className="p-2 border-t">
-      <div className="flex items-center gap-2 mb-2">
-        <input
-          type="text"
-          value={section.name}
-          onChange={(e) => updateSection(index, 'name', e.target.value)}
-          placeholder="Section Name"
-          className="border p-1 rounded"
-        />
-        <div className="flex items-center gap-2">
-          <select
-            value={section.status}
-            onChange={(e) => updateSection(index, 'status', e.target.value as 'not_tested' | 'passed' | 'failed')}
-            className="border p-1 rounded"
-          >
-            <option value="not_tested">Not Tested</option>
-            <option value="passed">Passed</option>
-            <option value="failed">Failed</option>
-          </select>
+    <div className="border p-4 rounded mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-lg font-semibold">Section {index + 1}</h3>
+        <button
+          onClick={() => {
+            // TODO: Implement section deletion
+          }}
+          className="text-red-500 hover:text-red-700"
+        >
+          Delete
+        </button>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Section Name</label>
+          <input
+            type="text"
+            value={section.name}
+            onChange={(e) => updateSection(index, 'name', e.target.value)}
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            placeholder="Enter section name"
+            autoComplete="off"
+            data-form-type="other"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            value={section.description}
+            onChange={(e) => updateSection(index, 'description', e.target.value)}
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            placeholder="Enter section description"
+            rows={3}
+            autoComplete="off"
+            data-form-type="other"
+          />
         </div>
       </div>
-      <textarea
-        value={section.notes}
-        onChange={(e) => updateSection(index, 'notes', e.target.value)}
-        placeholder="Notes"
-        className="w-full border p-1 rounded text-sm"
-      />
     </div>
   );
 }
