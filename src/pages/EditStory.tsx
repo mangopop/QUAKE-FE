@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 
 interface Test {
   id: string;
@@ -150,12 +150,12 @@ export default function EditStory() {
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => navigate(`/tests/${test.id}`)}
+                      <Link
+                        to={`/stories/${story.id}/run?testIndex=${story.tests.findIndex(t => t.id === test.id)}`}
                         className="text-blue-500 hover:text-blue-700"
                       >
                         Run Test
-                      </button>
+                      </Link>
                       <button
                         onClick={() => handleDeleteTest(test.id)}
                         className="text-red-500 hover:text-red-700"

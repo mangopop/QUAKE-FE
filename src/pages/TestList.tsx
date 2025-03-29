@@ -58,7 +58,7 @@ export default function TestList() {
               </div>
               <div className="flex gap-2">
                 <Link
-                  to={`/tests/${test.id}/edit`}
+                  to={`/templates`}
                   className="text-blue-500 hover:text-blue-700"
                 >
                   Edit
