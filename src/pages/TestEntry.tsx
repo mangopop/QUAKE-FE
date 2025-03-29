@@ -81,8 +81,20 @@ export default function NewTestEntry() {
           />
         ))}
       </div>
-      <button onClick={addSection} className="bg-green-500 text-white p-2 rounded mb-2">Add Section</button>
-      <button onClick={handleSubmit} className="bg-blue-500 text-white p-2 rounded">Submit Test</button>
+      <div className="flex gap-2">
+        <button
+          onClick={addSection}
+          className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
+        >
+          Add Section
+        </button>
+        <button
+          onClick={handleSubmit}
+          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+        >
+          Submit Test
+        </button>
+      </div>
     </div>
   );
 }

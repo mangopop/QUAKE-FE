@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react
 import TestList from "./pages/TestList";
 import NewTestEntry from "./pages/TestEntry";
 import Templates from "./pages/Templates";
+import Stories from "./pages/Stories";
+import AddTestToStory from "./pages/AddTestToStory";
+import EditStory from "./pages/EditStory";
 
 function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   const location = useLocation();
@@ -35,6 +38,7 @@ export default function App() {
                   <NavLink to="/tests">View Tests</NavLink>
                   <NavLink to="/tests/new">Create Test</NavLink>
                   <NavLink to="/templates">Templates</NavLink>
+                  <NavLink to="/stories">Stories</NavLink>
                 </div>
               </div>
             </div>
@@ -47,6 +51,9 @@ export default function App() {
             <Route path="/tests" element={<TestList />} />
             <Route path="/tests/new" element={<NewTestEntry />} />
             <Route path="/templates" element={<Templates />} />
+            <Route path="/stories" element={<Stories />} />
+            <Route path="/stories/:storyId/add-test" element={<AddTestToStory />} />
+            <Route path="/stories/:storyId/edit" element={<EditStory />} />
           </Routes>
         </main>
       </div>
