@@ -9,9 +9,9 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
     <Link
       to={to}
-      className={`px-3 py-2 rounded-md text-sm font-medium ${
+      className={`px-4 py-2 text-sm font-medium ${
         isActive
-          ? 'bg-blue-100 text-blue-700'
+          ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-500'
           : 'text-gray-700 hover:bg-gray-100'
       }`}
     >
@@ -31,7 +31,7 @@ export default function App() {
                 <div className="flex-shrink-0 flex items-center">
                   <h1 className="text-xl font-bold text-gray-900">Q.U.A.K.E</h1>
                 </div>
-                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                <div className="hidden sm:ml-6 sm:flex sm:space-x-1">
                   <NavLink to="/tests">View Tests</NavLink>
                   <NavLink to="/tests/new">Create Test</NavLink>
                   <NavLink to="/templates">Templates</NavLink>
