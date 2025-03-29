@@ -295,20 +295,26 @@ export default function Templates() {
               <div className="space-y-2">
                 {newTemplate.sections?.map((section, index) => (
                   <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={section.name}
-                      onChange={(e) => updateSection(index, 'name', e.target.value)}
-                      className="flex-1 border rounded p-2"
-                      placeholder="Section name"
-                    />
-                    <input
-                      type="text"
-                      value={section.description}
-                      onChange={(e) => updateSection(index, 'description', e.target.value)}
-                      className="flex-1 border rounded p-2"
-                      placeholder="Section description"
-                    />
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-500 mb-1">Section Title</label>
+                      <input
+                        type="text"
+                        value={section.name}
+                        onChange={(e) => updateSection(index, 'name', e.target.value)}
+                        className="w-full border rounded p-2"
+                        placeholder="e.g., Username Input"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-500 mb-1">Section Notes</label>
+                      <input
+                        type="text"
+                        value={section.description}
+                        onChange={(e) => updateSection(index, 'description', e.target.value)}
+                        className="w-full border rounded p-2"
+                        placeholder="e.g., Test username validation"
+                      />
+                    </div>
                     <button
                       onClick={() => {
                         setNewTemplate(prev => ({
@@ -316,7 +322,7 @@ export default function Templates() {
                           sections: prev.sections?.filter((_, i) => i !== index)
                         }));
                       }}
-                      className="text-red-500 hover:text-red-700"
+                      className="text-red-500 hover:text-red-700 self-end mb-2"
                     >
                       Remove
                     </button>
