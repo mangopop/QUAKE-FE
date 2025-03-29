@@ -1,4 +1,6 @@
 import { useState } from "react";
+import TemplateNav from "../components/TemplateNav";
+import CategoryManager from "../components/CategoryManager";
 
 interface Template {
   id: string;
@@ -12,6 +14,8 @@ interface Template {
 }
 
 type TemplateFormMode = 'create' | 'edit';
+type SortField = 'name' | 'category' | 'sections';
+type SortOrder = 'asc' | 'desc';
 
 export default function Templates() {
   const [templates, setTemplates] = useState<Template[]>([
@@ -44,6 +48,9 @@ export default function Templates() {
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [newTemplate, setNewTemplate] = useState<Partial<Template>>({
     name: "",
     description: "",
@@ -102,6 +109,15 @@ export default function Templates() {
     }
   };
 
+  const handleDuplicate = (template: Template) => {
+    const newTemplate: Template = {
+      ...template,
+      id: Date.now().toString(),
+      name: `${template.name} (Copy)`
+    };
+    setTemplates(prev => [...prev, newTemplate]);
+  };
+
   const resetForm = () => {
     setNewTemplate({ name: "", description: "", category: "", sections: [] });
     setEditingTemplateId(null);
@@ -109,12 +125,57 @@ export default function Templates() {
     setShowTemplateForm(false);
   };
 
-  const filteredTemplates = templates.filter(template => {
-    const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         template.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || template.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const handleExport = () => {
+    const dataStr = JSON.stringify(templates, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'templates.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (file: File) => {
+    try {
+      const text = await file.text();
+      const importedTemplates = JSON.parse(text);
+      setTemplates(prev => [...prev, ...importedTemplates]);
+    } catch (error) {
+      alert('Error importing templates. Please check the file format.');
+    }
+  };
+
+  const handleUpdateCategories = (newCategories: string[]) => {
+    // Update templates to use new category names
+    setTemplates(prev => prev.map(template => {
+      const newCategory = newCategories.find(cat => cat === template.category);
+      return newCategory ? template : { ...template, category: newCategories[0] };
+    }));
+  };
+
+  const filteredAndSortedTemplates = templates
+    .filter(template => {
+      const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           template.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === "all" || template.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      const multiplier = sortOrder === 'asc' ? 1 : -1;
+      switch (sortField) {
+        case 'name':
+          return multiplier * a.name.localeCompare(b.name);
+        case 'category':
+          return multiplier * a.category.localeCompare(b.category);
+        case 'sections':
+          return multiplier * (a.sections.length - b.sections.length);
+        default:
+          return 0;
+      }
+    });
 
   return (
     <div className="p-4">
@@ -131,6 +192,12 @@ export default function Templates() {
           Create New Template
         </button>
       </div>
+
+      <TemplateNav
+        onImport={handleImport}
+        onExport={handleExport}
+        onManageCategories={() => setShowCategoryManager(true)}
+      />
 
       <div className="mb-6 flex gap-4 items-center">
         <div className="flex-1">
@@ -154,8 +221,32 @@ export default function Templates() {
               <option key={category} value={category}>{category}</option>
             ))}
           </select>
+          <label className="text-sm font-medium">Sort by:</label>
+          <select
+            value={sortField}
+            onChange={(e) => setSortField(e.target.value as SortField)}
+            className="border rounded-md p-2"
+          >
+            <option value="name">Name</option>
+            <option value="category">Category</option>
+            <option value="sections">Number of Sections</option>
+          </select>
+          <button
+            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            className="border p-2 rounded"
+          >
+            {sortOrder === 'asc' ? '↑' : '↓'}
+          </button>
         </div>
       </div>
+
+      {showCategoryManager && (
+        <CategoryManager
+          categories={categories}
+          onClose={() => setShowCategoryManager(false)}
+          onUpdateCategories={handleUpdateCategories}
+        />
+      )}
 
       {showTemplateForm && (
         <div className="mb-8 p-4 border rounded-lg bg-white">
@@ -258,7 +349,7 @@ export default function Templates() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredTemplates.map((template) => (
+        {filteredAndSortedTemplates.map((template) => (
           <div key={template.id} className="border rounded-lg p-4 shadow-sm bg-white">
             <div className="flex justify-between items-start mb-2">
               <div>
@@ -268,6 +359,12 @@ export default function Templates() {
                 </span>
               </div>
               <div className="flex gap-2">
+                <button
+                  onClick={() => handleDuplicate(template)}
+                  className="text-green-500 hover:text-green-700"
+                >
+                  Duplicate
+                </button>
                 <button
                   onClick={() => handleEdit(template)}
                   className="text-blue-500 hover:text-blue-700"
