@@ -41,13 +41,16 @@ export interface Section {
 }
 
 export interface Template {
-  id: string;
+  id: number;
   name: string;
-  description?: string;
-  content: string;
-  sections: Section[];
-  createdAt: string;
-  updatedAt: string;
+  owner: any[];
+  tests: {
+    id: number;
+    name: string;
+    owner: any[];
+    notes: string | null;
+  }[];
+  stories: any[];
 }
 
 export interface Test {
@@ -56,6 +59,8 @@ export interface Test {
   owner: any[];
   notes: string | null;
   categories: any[];
+  templateId?: string;
+  sections: Section[];
 }
 
 export interface CreateTestRequest {
@@ -76,4 +81,10 @@ export interface RegisterCredentials extends LoginCredentials {
 
 export interface AuthResponse {
   token: string;
+}
+
+export interface CreateTemplateRequest {
+  name: string;
+  testIds: number[];
+  storyIds: number[];
 }
