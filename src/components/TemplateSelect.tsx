@@ -1,11 +1,4 @@
-interface Template {
-  id: string;
-  name: string;
-  sections: {
-    name: string;
-    description: string;
-  }[];
-}
+import type { Template } from "../services/types";
 
 interface TemplateSelectProps {
   template: string;

@@ -29,8 +29,8 @@ export default function Stories() {
   // Load stories from localStorage on component mount
   useEffect(() => {
     try {
-      const savedStories = localStorage.getItem('stories');
-      if (savedStories) {
+    const savedStories = localStorage.getItem('stories');
+    if (savedStories) {
         const parsedData = JSON.parse(savedStories);
         // Validate the parsed data has the required structure
         if (parsedData && parsedData.id && parsedData.name) {
@@ -38,7 +38,7 @@ export default function Stories() {
         } else {
           throw new Error('Invalid story data structure');
         }
-      } else {
+    } else {
         // Initialize with default structure
         const defaultRootFolder: StoryFolder = {
           id: "root",
@@ -53,15 +53,15 @@ export default function Stories() {
               createdAt: new Date().toISOString(),
               parentId: "root",
               stories: [
-                {
-                  id: "1",
-                  title: "User Registration Flow",
-                  description: "Complete user registration process including email verification and profile setup",
-                  tests: [
-                    {
-                      id: "1",
-                      title: "Email Registration",
-                      template: "Login Flow",
+        {
+          id: "1",
+          title: "User Registration Flow",
+          description: "Complete user registration process including email verification and profile setup",
+          tests: [
+            {
+              id: "1",
+              title: "Email Registration",
+              template: "Login Flow",
                       templateId: "login-flow",
                       sections: [
                         {
@@ -71,12 +71,12 @@ export default function Stories() {
                           notes: ""
                         }
                       ],
-                      status: 'passed'
-                    },
-                    {
-                      id: "2",
-                      title: "Profile Setup",
-                      template: "User Profile",
+              status: 'passed'
+            },
+            {
+              id: "2",
+              title: "Profile Setup",
+              template: "User Profile",
                       templateId: "user-profile",
                       sections: [
                         {
@@ -86,10 +86,10 @@ export default function Stories() {
                           notes: ""
                         }
                       ],
-                      status: 'not_tested'
-                    }
-                  ],
-                  createdAt: "2024-03-20T10:00:00Z"
+              status: 'not_tested'
+            }
+          ],
+          createdAt: "2024-03-20T10:00:00Z"
                 }
               ],
               subfolders: []
@@ -100,15 +100,15 @@ export default function Stories() {
               createdAt: new Date().toISOString(),
               parentId: "root",
               stories: [
-                {
-                  id: "2",
-                  title: "E-commerce Purchase Flow",
-                  description: "Complete purchase process from product selection to order confirmation",
-                  tests: [
-                    {
-                      id: "3",
-                      title: "Product Selection",
-                      template: "Product Search",
+        {
+          id: "2",
+          title: "E-commerce Purchase Flow",
+          description: "Complete purchase process from product selection to order confirmation",
+          tests: [
+            {
+              id: "3",
+              title: "Product Selection",
+              template: "Product Search",
                       templateId: "product-search",
                       sections: [
                         {
@@ -118,12 +118,12 @@ export default function Stories() {
                           notes: ""
                         }
                       ],
-                      status: 'passed'
-                    },
-                    {
-                      id: "4",
-                      title: "Checkout Process",
-                      template: "Checkout Process",
+              status: 'passed'
+            },
+            {
+              id: "4",
+              title: "Checkout Process",
+              template: "Checkout Process",
                       templateId: "checkout-process",
                       sections: [
                         {
@@ -133,11 +133,11 @@ export default function Stories() {
                           notes: ""
                         }
                       ],
-                      status: 'not_tested'
-                    }
-                  ],
-                  createdAt: "2024-03-19T15:30:00Z"
-                }
+              status: 'not_tested'
+            }
+          ],
+          createdAt: "2024-03-19T15:30:00Z"
+        }
               ],
               subfolders: []
             }
@@ -349,59 +349,59 @@ export default function Stories() {
       </div>
 
       <div className="flex-1 p-4">
-        <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">
             {selectedFolder ? `Stories in ${selectedFolder.name}` : 'All Stories'}
           </h2>
-          <button
-            onClick={() => setShowNewStoryForm(true)}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Create New Story
-          </button>
-        </div>
+        <button
+          onClick={() => setShowNewStoryForm(true)}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Create New Story
+        </button>
+      </div>
 
-        {showNewStoryForm && (
-          <div className="mb-8 p-4 border rounded-lg bg-white">
-            <h3 className="text-lg font-semibold mb-4">New Test Story</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Story Title</label>
-                <input
-                  type="text"
-                  value={newStory.title}
-                  onChange={(e) => setNewStory(prev => ({ ...prev, title: e.target.value }))}
-                  className="mt-1 block w-full border rounded-md shadow-sm p-2"
-                  placeholder="Enter story title"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea
-                  value={newStory.description}
-                  onChange={(e) => setNewStory(prev => ({ ...prev, description: e.target.value }))}
-                  className="mt-1 block w-full border rounded-md shadow-sm p-2"
-                  placeholder="Enter story description"
-                  rows={3}
-                />
-              </div>
+      {showNewStoryForm && (
+        <div className="mb-8 p-4 border rounded-lg bg-white">
+          <h3 className="text-lg font-semibold mb-4">New Test Story</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Story Title</label>
+              <input
+                type="text"
+                value={newStory.title}
+                onChange={(e) => setNewStory(prev => ({ ...prev, title: e.target.value }))}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                placeholder="Enter story title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <textarea
+                value={newStory.description}
+                onChange={(e) => setNewStory(prev => ({ ...prev, description: e.target.value }))}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+                placeholder="Enter story description"
+                rows={3}
+              />
+            </div>
               <div className="flex justify-end space-x-2">
-                <button
+              <button
                   onClick={resetStoryForm}
                   className="px-4 py-2 border rounded hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
+              >
+                Cancel
+              </button>
+              <button
                   onClick={handleSubmitStory}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Create Story
-                </button>
-              </div>
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Create Story
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {showNewFolderForm && (
           <div className="mb-8 p-4 border rounded-lg bg-white">
@@ -648,34 +648,34 @@ export default function Stories() {
                       className="p-4 border rounded-lg bg-white hover:shadow-md transition-shadow"
                     >
                       <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold">{story.title}</h3>
-                            <span className={`${getStatusColor(getStoryStatus(story))}`}>
-                              {getStatusIcon(getStoryStatus(story))}
-                            </span>
-                          </div>
-                          <p className="text-gray-600">{story.description}</p>
-                          <p className="text-sm text-gray-500">
-                            Created: {new Date(story.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Link
-                            to={`/stories/${story.id}/run`}
-                            className="text-green-500 hover:text-green-700"
-                          >
-                            Run Story
-                          </Link>
-                          <Link
-                            to={`/stories/${story.id}/edit`}
-                            className="text-blue-500 hover:text-blue-700"
-                          >
-                            Edit
-                          </Link>
-                          <button
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to delete this story?')) {
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold">{story.title}</h3>
+                  <span className={`${getStatusColor(getStoryStatus(story))}`}>
+                    {getStatusIcon(getStoryStatus(story))}
+                  </span>
+                </div>
+                <p className="text-gray-600">{story.description}</p>
+                <p className="text-sm text-gray-500">
+                  Created: {new Date(story.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  to={`/stories/${story.id}/run`}
+                  className="text-green-500 hover:text-green-700"
+                >
+                  Run Story
+                </Link>
+                <Link
+                  to={`/stories/${story.id}/edit`}
+                  className="text-blue-500 hover:text-blue-700"
+                >
+                  Edit
+                </Link>
+                <button
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete this story?')) {
                                 const updatedRootFolder = {
                                   ...rootFolder,
                                   stories: rootFolder.stories.filter(s => s.id !== story.id),
@@ -686,53 +686,53 @@ export default function Stories() {
                                 };
                                 setRootFolder(updatedRootFolder);
                                 localStorage.setItem('stories', JSON.stringify(updatedRootFolder));
-                              }
-                            }}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
+                    }
+                  }}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
 
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <h4 className="font-medium">Tests in this Story</h4>
-                          <Link
-                            to={`/stories/${story.id}/add-test`}
-                            className="text-blue-500 hover:text-blue-700"
-                          >
-                            + Add Test
-                          </Link>
-                        </div>
-                        {story.tests.map((test) => (
-                          <div key={test.id} className="flex items-center justify-between border-t pt-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{test.title}</span>
-                              <span className="text-sm text-gray-500">({test.template})</span>
-                              <span className={`${getStatusColor(test.status)}`}>
-                                {getStatusIcon(test.status)}
-                              </span>
-                            </div>
-                            <div className="flex gap-2">
-                              <Link
-                                to={`/stories/${story.id}/run?testIndex=${story.tests.findIndex(t => t.id === test.id)}`}
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                Run Test
-                              </Link>
-                              <button
-                                onClick={() => removeTestFromStory(story.id, test.id)}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <h4 className="font-medium">Tests in this Story</h4>
+                <Link
+                  to={`/stories/${story.id}/add-test`}
+                  className="text-blue-500 hover:text-blue-700"
+                >
+                  + Add Test
+                </Link>
+              </div>
+              {story.tests.map((test) => (
+                <div key={test.id} className="flex items-center justify-between border-t pt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{test.title}</span>
+                    <span className="text-sm text-gray-500">({test.template})</span>
+                    <span className={`${getStatusColor(test.status)}`}>
+                      {getStatusIcon(test.status)}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link
+                      to={`/stories/${story.id}/run?testIndex=${story.tests.findIndex(t => t.id === test.id)}`}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      Run Test
+                    </Link>
+                    <button
+                      onClick={() => removeTestFromStory(story.id, test.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
                 </div>
               )}
             </>

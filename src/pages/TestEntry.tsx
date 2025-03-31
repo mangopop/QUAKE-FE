@@ -1,42 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Section from "../components/Section";
 import TemplateSelect from "../components/TemplateSelect";
-
-interface Section {
-  name: string;
-  description: string;
-}
-
-interface Template {
-  id: string;
-  name: string;
-  sections: Section[];
-}
+import { useTemplates, useTemplate } from "../services/templates.service";
+import { useCreateTest } from "../services/tests.service";
+import type { Section as SectionType, Template } from "../services/types";
 
 export default function NewTestEntry() {
   const navigate = useNavigate();
-  const [title, setTitle] = useState("");
-  const [template, setTemplate] = useState("");
-  const [sections, setSections] = useState<Section[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [name, setName] = useState("");
+  const [templateId, setTemplateId] = useState("");
+  const [sections, setSections] = useState<SectionType[]>([]);
 
-  // Load templates from localStorage
-  useEffect(() => {
-    const savedTemplates = localStorage.getItem('templates');
-    console.log('Loading templates from localStorage:', savedTemplates);
-    if (savedTemplates) {
-      const parsedTemplates = JSON.parse(savedTemplates);
-      console.log('Parsed templates:', parsedTemplates);
-      setTemplates(parsedTemplates);
-    }
-  }, []);
+  const { data: templatesData, isLoading: isLoadingTemplates } = useTemplates();
+  const { data: selectedTemplate, isLoading: isLoadingTemplate } = useTemplate(templateId);
+  const createTest = useCreateTest();
 
   const addSection = () => {
     setSections([...sections, { name: "", description: "" }]);
   };
 
-  const updateSection = (index: number, key: keyof Section, value: string) => {
+  const updateSection = (index: number, key: keyof SectionType, value: string) => {
     const newSections = sections.map((section, i) =>
       i === index ? { ...section, [key]: value } : section
     );
@@ -44,10 +28,9 @@ export default function NewTestEntry() {
   };
 
   const handleTemplateChange = (templateId: string) => {
-    setTemplate(templateId);
-    const selectedTemplate = templates.find(t => t.id === templateId);
-    if (selectedTemplate) {
-      setSections(selectedTemplate.sections.map(section => ({
+    setTemplateId(templateId);
+    if (templateId && selectedTemplate?.data) {
+      setSections(selectedTemplate.data.sections.map(section => ({
         ...section,
         description: section.description
       })));
@@ -56,27 +39,23 @@ export default function NewTestEntry() {
     }
   };
 
-  const handleSubmit = () => {
-    const testEntry = {
-      id: Date.now().toString(),
-      title,
-      template,
-      sections,
-      createdAt: new Date().toISOString()
-    };
-
-    // Get existing tests from localStorage
-    const existingTests = JSON.parse(localStorage.getItem('tests') || '[]');
-
-    // Add the new test to the array
-    const updatedTests = [...existingTests, testEntry];
-
-    // Save back to localStorage
-    localStorage.setItem('tests', JSON.stringify(updatedTests));
-
-    // Navigate to the test list view
-    navigate("/tests");
+  const handleSubmit = async () => {
+    try {
+      await createTest.mutateAsync({
+        name,
+        templateId: templateId || undefined,
+        sections,
+      });
+      navigate("/tests");
+    } catch (error) {
+      console.error('Failed to create test:', error);
+      // You might want to show an error message to the user here
+    }
   };
+
+  if (isLoadingTemplates) {
+    return <div>Loading templates...</div>;
+  }
 
   return (
     <div className="p-4">
@@ -92,12 +71,21 @@ export default function NewTestEntry() {
 
       <input
         type="text"
-        placeholder="Test Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Test Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
         className="border p-2 rounded w-full mb-2"
       />
-      <TemplateSelect template={template} setTemplate={handleTemplateChange} templates={templates} />
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Template (Optional)
+        </label>
+        <TemplateSelect
+          template={templateId}
+          setTemplate={handleTemplateChange}
+          templates={templatesData?.data || []}
+        />
+      </div>
       <div className="mb-4">
         {sections.map((section, index) => (
           <Section
@@ -117,9 +105,10 @@ export default function NewTestEntry() {
         </button>
         <button
           onClick={handleSubmit}
-          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          disabled={createTest.isPending}
+          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Create Test
+          {createTest.isPending ? 'Creating...' : 'Create Test'}
         </button>
       </div>
     </div>
