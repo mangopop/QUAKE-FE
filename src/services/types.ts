@@ -28,9 +28,9 @@ export interface Category {
 
 export interface Story {
   id: string;
-  title: string;
+  name: string;
   description?: string;
-  categoryId: string;
+  tests: Test[];
   createdAt: string;
   updatedAt: string;
 }
@@ -51,14 +51,11 @@ export interface Template {
 }
 
 export interface Test {
-  id: string;
+  id: number;
   name: string;
-  description?: string;
-  templateId: string;
-  storyId?: string;
-  sections: Section[];
-  createdAt: string;
-  updatedAt: string;
+  owner: any[];
+  notes: string | null;
+  categories: any[];
 }
 
 export interface CreateTestRequest {

@@ -1,65 +1,47 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useTests, useDeleteTest } from "../services/tests.service";
+import type { Test } from "../services/types";
 
-interface Section {
-  name: string;
-  description: string;
-}
-
-interface Test {
-  id: string;
-  title: string;
-  template: string;
-  sections: Section[];
-  createdAt: string;
-}
-
-type SortField = 'title' | 'template' | 'sections';
+type SortField = 'name' | 'categories';
 type SortOrder = 'asc' | 'desc';
 
 export default function TestList() {
-  const [testEntries, setTestEntries] = useState<Test[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("all");
-  const [sortField, setSortField] = useState<SortField>('title');
+  const [sortField, setSortField] = useState<SortField>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
-  useEffect(() => {
-    // Load saved tests from localStorage
-    const savedTests = localStorage.getItem('tests');
-    if (savedTests) {
-      setTestEntries(JSON.parse(savedTests));
-    }
-  }, []);
+  const { data: tests, isLoading } = useTests();
+  const deleteTest = useDeleteTest();
 
-  const deleteTest = (id: string) => {
+  const handleDeleteTest = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this test?')) {
-      const updatedTests = testEntries.filter(test => test.id !== id);
-      setTestEntries(updatedTests);
-      localStorage.setItem('tests', JSON.stringify(updatedTests));
+      try {
+        await deleteTest.mutateAsync(id.toString());
+      } catch (error) {
+        console.error('Failed to delete test:', error);
+      }
     }
   };
 
-  // Get unique templates for filter dropdown
-  const templates = Array.from(new Set(testEntries.map(test => test.template)));
+  if (isLoading) {
+    return <div>Loading tests...</div>;
+  }
 
   // Filter and sort tests
-  const filteredAndSortedTests = testEntries
+  const filteredAndSortedTests = (tests || [])
     .filter(test => {
-      const matchesSearch = test.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           test.template.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesTemplate = selectedTemplate === "all" || test.template === selectedTemplate;
-      return matchesSearch && matchesTemplate;
+      const matchesSearch = test.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (test.notes?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+      return matchesSearch;
     })
     .sort((a, b) => {
       const multiplier = sortOrder === 'asc' ? 1 : -1;
       switch (sortField) {
-        case 'title':
-          return multiplier * a.title.localeCompare(b.title);
-        case 'template':
-          return multiplier * a.template.localeCompare(b.template);
-        case 'sections':
-          return multiplier * (a.sections.length - b.sections.length);
+        case 'name':
+          return multiplier * a.name.localeCompare(b.name);
+        case 'categories':
+          return multiplier * (a.categories.length - b.categories.length);
         default:
           return 0;
       }
@@ -88,26 +70,14 @@ export default function TestList() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">Template:</label>
-          <select
-            value={selectedTemplate}
-            onChange={(e) => setSelectedTemplate(e.target.value)}
-            className="border rounded-md p-2"
-          >
-            <option value="all">All Templates</option>
-            {templates.map(template => (
-              <option key={template} value={template}>{template}</option>
-            ))}
-          </select>
           <label className="text-sm font-medium">Sort by:</label>
           <select
             value={sortField}
             onChange={(e) => setSortField(e.target.value as SortField)}
             className="border rounded-md p-2"
           >
-            <option value="title">Title</option>
-            <option value="template">Template</option>
-            <option value="sections">Number of Sections</option>
+            <option value="name">Name</option>
+            <option value="categories">Number of Categories</option>
           </select>
           <button
             onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
@@ -123,37 +93,43 @@ export default function TestList() {
           <div key={test.id} className="border rounded-lg p-4 shadow-sm bg-white">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-lg font-semibold">{test.title}</h3>
-                <p className="text-gray-600">Type: {test.template}</p>
+                <h3 className="text-lg font-semibold">{test.name}</h3>
+                {test.notes && (
+                  <p className="text-gray-600">{test.notes}</p>
+                )}
                 <p className="text-sm text-gray-500">
-                  Created: {new Date(test.createdAt).toLocaleDateString()}
+                  Categories: {test.categories.length}
                 </p>
               </div>
               <div className="flex gap-2">
                 <Link
-                  to={`/templates`}
+                  to={`/tests/${test.id}/edit`}
                   className="text-blue-500 hover:text-blue-700"
                 >
                   Edit
                 </Link>
                 <button
-                  onClick={() => deleteTest(test.id)}
-                  className="text-red-500 hover:text-red-700"
+                  onClick={() => handleDeleteTest(test.id)}
+                  disabled={deleteTest.isPending}
+                  className="text-red-500 hover:text-red-700 disabled:opacity-50"
                 >
-                  Delete
+                  {deleteTest.isPending ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h4 className="font-medium">Sections</h4>
-              {test.sections.map((section, index) => (
-                <div key={index} className="border-t pt-2">
-                  <div className="font-medium">{section.name}</div>
-                  <p className="text-gray-600">{section.description}</p>
+            {test.categories.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-medium">Categories</h4>
+                <div className="flex flex-wrap gap-2">
+                  {test.categories.map((category, index) => (
+                    <div key={index} className="bg-gray-100 px-2 py-1 rounded text-sm">
+                      Category {index + 1}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

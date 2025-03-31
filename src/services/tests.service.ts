@@ -14,27 +14,27 @@ export const queryKeys = {
 
 export const testsService = {
   getAll: async () => {
-    const response = await apiClient.get<ApiResponse<Test[]>>(ENDPOINTS.tests);
+    const response = await apiClient.get<Test[]>(ENDPOINTS.tests);
     return response.data;
   },
 
   getById: async (id: string) => {
-    const response = await apiClient.get<ApiResponse<Test>>(ENDPOINTS.test(id));
+    const response = await apiClient.get<Test>(ENDPOINTS.test(id));
     return response.data;
   },
 
   create: async (data: CreateTestRequest) => {
-    const response = await apiClient.post<ApiResponse<Test>>(ENDPOINTS.tests, data);
+    const response = await apiClient.post<Test>(ENDPOINTS.tests, data);
     return response.data;
   },
 
   update: async (id: string, data: Partial<Test>) => {
-    const response = await apiClient.put<ApiResponse<Test>>(ENDPOINTS.test(id), data);
+    const response = await apiClient.put<Test>(ENDPOINTS.test(id), data);
     return response.data;
   },
 
   delete: async (id: string) => {
-    const response = await apiClient.delete<ApiResponse<void>>(ENDPOINTS.test(id));
+    const response = await apiClient.delete<void>(ENDPOINTS.test(id));
     return response.data;
   },
 };
