@@ -1,12 +1,29 @@
-# React + Vite
+# QUAKE Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern web application for managing test templates and test execution. Built with React, TypeScript, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Template Management
+  - Create, edit and delete test templates
+  - Organize tests into reusable templates
+  - Search and filter templates
+- Test Execution
+  - Create tests from templates
+  - Track test sections and progress
+  - Add notes and documentation
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React 18
+- TypeScript
+- Tailwind CSS
+- React Router v7
+- React Query
+- Vite
+- Vitest for testing
+
+## Getting Started
+
+1. Install dependencies:
+
