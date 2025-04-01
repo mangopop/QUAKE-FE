@@ -80,6 +80,13 @@ describe('Stories Component', () => {
     // Reset all mocks before each test
     vi.clearAllMocks()
 
+    // Mock window.location
+    const location = new URL('http://localhost');
+    Object.defineProperty(window, 'location', {
+      value: location,
+      writable: true
+    });
+
     // Setup default mock implementations
     const mockQueryResult = {
       data: mockStories,
