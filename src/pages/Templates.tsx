@@ -1,22 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTemplates, useCreateTemplate, useDeleteTemplate } from "../services/templates.service";
-import type { Template, CreateTemplateRequest } from "../services/types";
+import { useTemplates, useDeleteTemplate } from "../services/templates.service";
+import type { Template } from "../services/types";
+import CreateTemplateModal from "../components/CreateTemplateModal";
 
 export default function Templates() {
   const [searchQuery, setSearchQuery] = useState("");
   const { data: templates, isLoading } = useTemplates();
-  const createTemplate = useCreateTemplate();
   const deleteTemplate = useDeleteTemplate();
   const navigate = useNavigate();
-
-  const handleCreateTemplate = async (template: CreateTemplateRequest) => {
-    try {
-      await createTemplate.mutateAsync(template);
-    } catch (error) {
-      console.error('Failed to create template:', error);
-    }
-  };
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const handleDeleteTemplate = async (id: number) => {
     try {
@@ -39,7 +32,7 @@ export default function Templates() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Templates</h2>
         <button
-          onClick={() => navigate('/templates/new')}
+          onClick={() => setIsCreateModalOpen(true)}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,6 +60,9 @@ export default function Templates() {
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">{template.name}</h3>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">{template.tests.length}</span> tests
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -89,38 +85,15 @@ export default function Templates() {
                   </button>
                 </div>
               </div>
-
-              <div className="space-y-3">
-                {template.tests.map((test) => (
-                  <div key={test.id} className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="font-medium text-gray-900">{test.name || 'Unnamed Test'}</h4>
-                        {test.notes && (
-                          <p className="text-sm text-gray-500">{test.notes}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">{test.sections?.length || 0}</span> sections
-                        </div>
-                        <Link
-                          to={`/tests/${test.id}/edit`}
-                          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         ))}
       </div>
+
+      <CreateTemplateModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   );
 }

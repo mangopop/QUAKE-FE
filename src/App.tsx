@@ -5,14 +5,16 @@ import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
 import TestList from "./pages/TestList";
 import NewTestEntry from "./pages/NewTestEntry";
-import Templates from "./pages/Templates";
-import Stories from "./pages/Stories";
-import AddTestToStory from "./pages/AddTestToStory";
-import EditStory from "./pages/EditStory";
-import RunStory from "./pages/RunStory";
 import EditTest from "./pages/EditTest";
-import StoryDetails from "./pages/StoryDetails";
+import Templates from "./pages/Templates";
 import EditTemplate from "./pages/EditTemplate";
+import Stories from "./pages/Stories";
+import EditStory from "./pages/EditStory";
+import ViewStory from "./pages/ViewStory";
+import CreateStory from "./pages/CreateStory";
+import AddTestToStory from "./pages/AddTestToStory";
+import RunStory from "./pages/RunStory";
+import StoryDetails from "./pages/StoryDetails";
 
 function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   const location = useLocation();

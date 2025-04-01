@@ -39,7 +39,7 @@ export default function CreateStoryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Create New Story</h2>

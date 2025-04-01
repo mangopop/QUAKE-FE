@@ -68,7 +68,7 @@ export default function Stories() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Stories</h2>
         <button
-          onClick={() => navigate('/stories/new')}
+          onClick={() => setIsCreateModalOpen(true)}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
