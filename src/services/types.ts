@@ -41,8 +41,8 @@ export interface Story {
   templateIds?: number[];
   testResults: {
     id: number;
+    status: "not_tested" | "passed" | "failed";
     notes: string | null;
-    passed: boolean;
     test: {
       id: number;
       name: string;

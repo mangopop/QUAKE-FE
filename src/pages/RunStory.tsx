@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useStory, useUpdateStory, useTestsByTemplate, useUpdateTestResult } from "../services/stories.service";
+import { useStory, useUpdateStory, useTestsByTemplate, useUpdateTestResult, storiesService } from "../services/stories.service";
 import type { Story, Template } from "../services/types";
 
 type TestStatus = "not_tested" | "passed" | "failed";
@@ -28,29 +28,34 @@ export default function RunStory() {
   // Fetch tests for all templates when story changes
   useEffect(() => {
     const fetchAllTests = async () => {
-      if (!storyTemplates.length) return;
+      if (!story?.templates) return;
 
-      const testsPromises = storyTemplates.map(async (template) => {
-        const response = await fetch(`/api/templates/${template.id}/tests`);
-        const data = await response.json();
-        return data;
-      });
+      try {
+        const testPromises = story.templates.map(template =>
+          storiesService.getTestsByTemplate(template.id)
+        );
 
-      const allTestsData = await Promise.all(testsPromises);
-      const flattenedTests = allTestsData.flat();
-      setAllTests(flattenedTests);
+        const testResults = await Promise.all(testPromises);
+        const allTests = testResults.flat();
+        console.log('Fetched all tests:', allTests);
+        setAllTests(allTests);
+      } catch (error) {
+        console.error('Error fetching tests:', error);
+      }
     };
 
     fetchAllTests();
-  }, [storyTemplates]);
+  }, [story?.templates]);
 
+  // Initialize test statuses from story test results
   useEffect(() => {
     if (story?.testResults) {
       const initialStatuses: Record<number, TestStatus> = {};
       const initialNotes: Record<number, string> = {};
 
       story.testResults.forEach(result => {
-        initialStatuses[result.test.id] = result.passed ? "passed" : "failed";
+        // Use the status directly from the test result
+        initialStatuses[result.test.id] = result.status as TestStatus || "not_tested";
         if (result.notes) {
           initialNotes[result.test.id] = result.notes;
         }
@@ -139,7 +144,7 @@ export default function RunStory() {
         storyId,
         testId: currentTest.id,
         data: {
-          passed: status === "passed",
+          status,
           notes: notes[currentTest.id] || null
         }
       });
@@ -178,19 +183,14 @@ export default function RunStory() {
 
       return {
         id: parseInt(testId),
-        passed: status === "passed",
+        status,
         notes: notes[parseInt(testId)] || null,
         test: {
           id: test.id,
           name: test.name,
-          owner: {
-            id: 0,
-            email: "",
-            firstName: "",
-            lastName: ""
-          },
+          owner: test.owner,
           notes: test.notes,
-          categories: []
+          categories: test.categories
         }
       };
     }).filter((result): result is NonNullable<typeof result> => result !== null);
