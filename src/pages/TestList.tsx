@@ -1,28 +1,13 @@
-import { Link } from "react-router-dom";
 import { useState } from "react";
-import { useTests, useDeleteTest, useCreateTest } from "../services/tests.service";
-import type { Test, CreateTestRequest } from "../services/types";
-import CreateTestModal from "../components/CreateTestModal";
-
-type SortField = 'name' | 'categories';
+import { Link, useNavigate } from "react-router-dom";
+import { useTests, useDeleteTest } from "../services/tests.service";
+import type { Test } from "../services/types";
 
 export default function TestList() {
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchQuery, setSearchQuery] = useState("");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data: tests, isLoading } = useTests();
   const deleteTest = useDeleteTest();
-  const createTest = useCreateTest();
-
-  const handleCreateTest = async (test: CreateTestRequest) => {
-    try {
-      await createTest.mutateAsync(test);
-      setIsCreateModalOpen(false);
-    } catch (error) {
-      console.error('Failed to create test:', error);
-    }
-  };
+  const navigate = useNavigate();
 
   const handleDeleteTest = async (id: number) => {
     try {
@@ -37,31 +22,21 @@ export default function TestList() {
   }
 
   const filteredTests = (tests || []).filter(test =>
-    test.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (test.notes && test.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+    test.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const sortedTests = [...filteredTests].sort((a, b) => {
-    if (sortField === 'name') {
-      return sortDirection === 'asc'
-        ? a.name.localeCompare(b.name)
-        : b.name.localeCompare(a.name);
-    } else {
-      return sortDirection === 'asc'
-        ? a.categories.length - b.categories.length
-        : b.categories.length - a.categories.length;
-    }
-  });
 
   return (
     <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Tests</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Tests</h2>
         <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          onClick={() => navigate('/tests/new')}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
         >
-          Create Test
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          New Test
         </button>
       </div>
 
@@ -76,78 +51,78 @@ export default function TestList() {
         />
       </div>
 
-      {/* Sort */}
-      <div className="mb-4 flex gap-4">
-        <select
-          value={sortField}
-          onChange={(e) => setSortField(e.target.value as SortField)}
-          className="border p-2 rounded"
-        >
-          <option value="name">Name</option>
-          <option value="categories">Categories</option>
-        </select>
-        <button
-          onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-          className="border p-2 rounded"
-        >
-          {sortDirection === 'asc' ? '↑' : '↓'}
-        </button>
-      </div>
-
-      {/* Create Test Modal */}
-      <CreateTestModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateTest}
-        isSubmitting={createTest.isPending}
-      />
-
-      {/* Tests list */}
-      <div className="space-y-4">
-        {sortedTests.map((test) => (
-          <div key={test.id} className="p-4 border rounded">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-lg font-semibold">{test.name}</h3>
-                {test.notes && (
-                  <p className="text-gray-600 mt-1">{test.notes}</p>
-                )}
-                <p className="text-sm text-gray-500 mt-1">
-                  Categories: {test.categories.length}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Link
-                  to={`/tests/${test.id}/edit`}
-                  className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                >
-                  Edit
-                </Link>
-                <button
-                  onClick={() => handleDeleteTest(test.id)}
-                  disabled={deleteTest.isPending}
-                  className="bg-red-500 text-white p-2 rounded hover:bg-red-600 disabled:opacity-50"
-                >
-                  {deleteTest.isPending ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
-            </div>
-
-            {test.categories.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-medium mb-2">Categories</h4>
-                <div className="flex flex-wrap gap-2">
-                  {test.categories.map((category) => (
-                    <span
-                      key={category.id}
-                      className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm"
-                    >
-                      {category.name}
-                    </span>
-                  ))}
+      <div className="grid gap-4">
+        {filteredTests.map((test) => (
+          <div key={test.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition-colors">
+            <div className="p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{test.name}</h3>
+                  {test.notes && (
+                    <p className="text-sm text-gray-500">{test.notes}</p>
+                  )}
+                  {(test.categories || []).length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(test.categories || []).map((category, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"
+                        >
+                          {category.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigate(`/tests/${test.id}/edit`)}
+                    className="text-gray-500 hover:text-blue-500 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                    title="Edit Test"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTest(test.id)}
+                    className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
+                    title="Delete Test"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
-            )}
+
+              <div className="space-y-3">
+                {(test.sections || []).map((section, index) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{section.name}</h4>
+                        <p className="text-sm text-gray-500">{section.description}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">{(test.categories || []).length}</span> categories
+                        </div>
+                        <Link
+                          to={`/tests/${test.id}`}
+                          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          View Details
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ))}
       </div>
