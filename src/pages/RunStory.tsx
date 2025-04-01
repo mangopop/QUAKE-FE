@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useStory, useUpdateStory, useTestsByTemplate, useUpdateTestResult } from "../services/stories.service";
-import type { Story, Template } from "../services/types";
+import { useStory, useUpdateStory, useTestsByTemplate, useUpdateTestResult, storiesService } from "../services/stories.service";
+import type { Story, Template, Test } from "../services/types";
 
 type TestStatus = "not_tested" | "passed" | "failed";
 
@@ -9,20 +9,47 @@ export default function RunStory() {
   const { storyId } = useParams<{ storyId: string }>();
   const navigate = useNavigate();
   const { data: story, isLoading: isLoadingStory } = useStory(storyId || "");
-  const updateStory = useUpdateStory();
   const updateTestResult = useUpdateTestResult();
   const [currentTemplateIndex, setCurrentTemplateIndex] = useState(0);
   const [currentTestIndex, setCurrentTestIndex] = useState(0);
   const [testStatuses, setTestStatuses] = useState<Record<number, TestStatus>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
+  const [uniqueTests, setUniqueTests] = useState<Test[]>([]);
+  const [totalTests, setTotalTests] = useState(0);
 
   // Get all templates associated with this story
   const storyTemplates = story?.templates || [];
 
-  // Fetch tests for the current template only
-  const { data: currentTemplateTests = [], isLoading: isLoadingTests } = useTestsByTemplate(
-    storyTemplates[currentTemplateIndex]?.id ?? 0
-  );
+  // Fetch tests for all templates and deduplicate them
+  useEffect(() => {
+    const fetchAllTests = async () => {
+      if (!story?.templates) return;
+
+      try {
+        const testPromises = story.templates.map(template =>
+          storiesService.getTestsByTemplate(template.id)
+        );
+
+        const testResults = await Promise.all(testPromises);
+        const allTests = testResults.flat();
+        setTotalTests(allTests.length);
+
+        // Deduplicate tests by ID
+        const uniqueTestsMap = new Map<number, Test>();
+        allTests.forEach((test: Test) => {
+          if (!uniqueTestsMap.has(test.id)) {
+            uniqueTestsMap.set(test.id, test);
+          }
+        });
+
+        setUniqueTests(Array.from(uniqueTestsMap.values()));
+      } catch (error) {
+        console.error('Error fetching tests:', error);
+      }
+    };
+
+    fetchAllTests();
+  }, [story?.templates]);
 
   // Get current template
   const currentTemplate = story?.templates[currentTemplateIndex];
@@ -34,7 +61,6 @@ export default function RunStory() {
       const initialNotes: Record<number, string> = {};
 
       story.testResults.forEach(result => {
-        // Use the status directly from the test result
         initialStatuses[result.test.id] = result.status as TestStatus || "not_tested";
         if (result.notes) {
           initialNotes[result.test.id] = result.notes;
@@ -46,7 +72,7 @@ export default function RunStory() {
     }
   }, [story]);
 
-  if (isLoadingStory || isLoadingTests) {
+  if (isLoadingStory) {
     return <div className="p-4">Loading story details...</div>;
   }
 
@@ -75,7 +101,7 @@ export default function RunStory() {
     );
   }
 
-  if (!currentTemplate || !currentTemplateTests.length) {
+  if (!currentTemplate || !uniqueTests.length) {
     return (
       <div className="p-4">
         <div className="max-w-4xl mx-auto">
@@ -96,7 +122,7 @@ export default function RunStory() {
     );
   }
 
-  const currentTest = currentTemplateTests[currentTestIndex];
+  const currentTest = uniqueTests[currentTestIndex];
 
   const handleStatusChange = async (status: TestStatus) => {
     if (!currentTest || !storyId) return;
@@ -131,69 +157,15 @@ export default function RunStory() {
     }));
   };
 
-  const handleSave = async () => {
-    if (!storyId) return;
-
-    const testResults = Object.entries(testStatuses).map(([testId, status]) => {
-      const test = currentTemplateTests.find(t => t.id === parseInt(testId));
-
-      if (!test) return null;
-
-      return {
-        id: parseInt(testId),
-        status,
-        notes: notes[parseInt(testId)] || null,
-        test: {
-          id: test.id,
-          name: test.name,
-          owner: test.owner,
-          notes: test.notes,
-          categories: test.categories
-        }
-      };
-    }).filter((result): result is NonNullable<typeof result> => result !== null);
-
-    try {
-      await updateStory.mutateAsync({
-        id: storyId,
-        data: {
-          testResults
-        }
-      });
-      navigate('/stories');
-    } catch (error) {
-      console.error('Failed to update story:', error);
-    }
-  };
-
-  const getStatusColor = (status: TestStatus) => {
-    switch (status) {
-      case "passed":
-        return "bg-green-500";
-      case "failed":
-        return "bg-red-500";
-      case "not_tested":
-        return "bg-gray-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
   const handlePrevious = () => {
     if (currentTestIndex > 0) {
       setCurrentTestIndex(prev => prev - 1);
-    } else if (currentTemplateIndex > 0) {
-      setCurrentTemplateIndex(prev => prev - 1);
-      setCurrentTestIndex(0);
     }
   };
 
   const handleNext = () => {
-    if (currentTestIndex < currentTemplateTests.length - 1) {
+    if (currentTestIndex < uniqueTests.length - 1) {
       setCurrentTestIndex(prev => prev + 1);
-    } else if (currentTemplateIndex < story.templates.length - 1) {
-      setCurrentTemplateIndex(prev => prev + 1);
-      setCurrentTestIndex(0);
     }
   };
 
@@ -209,24 +181,41 @@ export default function RunStory() {
         </button>
       </div>
 
+      {totalTests > uniqueTests.length && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                {totalTests - uniqueTests.length} duplicate test{totalTests - uniqueTests.length === 1 ? '' : 's'} {totalTests - uniqueTests.length === 1 ? 'was' : 'were'} removed from the list.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Test Navigation */}
       <div className="flex justify-between items-center mb-4">
         <button
           onClick={handlePrevious}
-          disabled={currentTemplateIndex === 0 && currentTestIndex === 0}
+          disabled={currentTestIndex === 0}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         >
           Previous
         </button>
         <div className="text-center">
-          <div className="font-medium text-lg">{currentTemplate.name}</div>
+          <div className="font-medium text-lg">All Tests</div>
           <div className="text-sm text-gray-600">
-            Template {currentTemplateIndex + 1} of {story.templates.length} - Test {currentTestIndex + 1} of {currentTemplateTests.length}
+            Test {currentTestIndex + 1} of {uniqueTests.length}
           </div>
         </div>
         <button
           onClick={handleNext}
-          disabled={currentTemplateIndex === story.templates.length - 1 && currentTestIndex === currentTemplateTests.length - 1}
+          disabled={currentTestIndex === uniqueTests.length - 1}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         >
           Next
