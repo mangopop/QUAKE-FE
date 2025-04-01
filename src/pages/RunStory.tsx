@@ -101,19 +101,11 @@ export default function RunStory() {
   const handleStatusChange = async (status: TestStatus) => {
     if (!currentTest || !storyId) return;
 
-    console.log('Current test:', currentTest);
-    console.log('Current test index:', currentTestIndex);
-    console.log('Total tests in current template:', currentTemplateTests.length);
-    console.log('Current template index:', currentTemplateIndex);
-    console.log('Total templates:', story.templates.length);
-    console.log('Current test statuses:', testStatuses);
-
     // Update local state
     const newTestStatuses = {
       ...testStatuses,
       [currentTest.id]: status
     };
-    console.log('New test statuses:', newTestStatuses);
     setTestStatuses(newTestStatuses);
 
     try {
@@ -126,18 +118,6 @@ export default function RunStory() {
           notes: notes[currentTest.id] || null
         }
       });
-
-      // Move to next test if available
-      if (currentTestIndex < currentTemplateTests.length - 1) {
-        console.log('Moving to next test in current template');
-        setCurrentTestIndex(prev => prev + 1);
-      } else if (currentTemplateIndex < story.templates.length - 1) {
-        console.log('Moving to first test of next template');
-        setCurrentTemplateIndex(prev => prev + 1);
-        setCurrentTestIndex(0);
-      } else {
-        console.log('No more tests to cycle through');
-      }
     } catch (error) {
       console.error('Failed to update test status:', error);
     }
