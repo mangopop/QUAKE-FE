@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useStories, useCreateStory, useDeleteStory } from "../services/stories.service";
+import { useStories, useCreateStory, useDeleteStory, useTestsByTemplate, storiesService } from "../services/stories.service";
 import type { Story } from "../services/types";
 import CreateStoryModal from "../components/CreateStoryModal";
 
@@ -10,6 +10,32 @@ export default function Stories() {
   const { data: stories, isLoading } = useStories();
   const createStory = useCreateStory();
   const deleteStory = useDeleteStory();
+  const [templateTestCounts, setTemplateTestCounts] = useState<Record<number, number>>({});
+
+  // Fetch test counts for all templates
+  useEffect(() => {
+    const fetchTestCounts = async () => {
+      if (!stories) return;
+
+      const counts: Record<number, number> = {};
+
+      for (const story of stories) {
+        for (const template of story.templates) {
+          try {
+            const tests = await storiesService.getTestsByTemplate(template.id);
+            counts[template.id] = tests.length;
+          } catch (error) {
+            console.error(`Error fetching tests for template ${template.id}:`, error);
+            counts[template.id] = 0;
+          }
+        }
+      }
+
+      setTemplateTestCounts(counts);
+    };
+
+    fetchTestCounts();
+  }, [stories]);
 
   const handleCreateStory = async (story: { name: string; templateIds: number[] }) => {
     try {
@@ -82,10 +108,10 @@ export default function Stories() {
               </div>
               <div className="flex gap-2">
                 <Link
-                  to={`/stories/${story.id}`}
+                  to={`/stories/${story.id}/run`}
                   className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
                 >
-                  View
+                  Run
                 </Link>
                 <Link
                   to={`/stories/${story.id}/edit`}
@@ -111,7 +137,7 @@ export default function Stories() {
                     <div key={template.id} className="border-t pt-2">
                       <div className="font-medium">{template.name}</div>
                       <p className="text-sm text-gray-600">
-                        {template.tests?.length || 0} tests
+                        {templateTestCounts[template.id] || 0} tests
                       </p>
                     </div>
                   ))}
