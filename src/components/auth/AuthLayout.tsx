@@ -2,9 +2,9 @@ import { Link, Outlet } from 'react-router-dom';
 
 export function AuthLayout() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-md mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900">Q.U.A.K.E</h1>
           <p className="mt-2 text-sm text-gray-600">
             Quality User Acceptance and Knowledge Engineering
@@ -15,7 +15,7 @@ export function AuthLayout() {
           <Outlet />
         </div>
 
-        <div className="mt-6 text-center">
+        <div className="text-center">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300" />
