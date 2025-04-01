@@ -1,212 +1,182 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { StoryFolder, Story, Test } from "../types/story";
-
-// Function to find a story in the folder tree
-const findStoryInFolder = (folder: StoryFolder, targetStoryId: string): Story | null => {
-  // Check stories in current folder
-  const storyInCurrentFolder = folder.stories.find(s => s.id === targetStoryId);
-  if (storyInCurrentFolder) {
-    return storyInCurrentFolder;
-  }
-
-  // Check subfolders
-  for (const subfolder of folder.subfolders) {
-    const foundStory = findStoryInFolder(subfolder, targetStoryId);
-    if (foundStory) {
-      return foundStory;
-    }
-  }
-
-  return null;
-};
-
-// Function to update a story in the folder tree
-const updateStoryInFolder = (folder: StoryFolder, updatedStory: Story): StoryFolder => {
-  // Check stories in current folder
-  const storyIndex = folder.stories.findIndex(s => s.id === updatedStory.id);
-  if (storyIndex !== -1) {
-    return {
-      ...folder,
-      stories: folder.stories.map((s, i) => i === storyIndex ? updatedStory : s)
-    };
-  }
-
-  // Check subfolders
-  return {
-    ...folder,
-    subfolders: folder.subfolders.map(subfolder => updateStoryInFolder(subfolder, updatedStory))
-  };
-};
+import { useParams, useNavigate } from "react-router-dom";
+import { useStory, useUpdateStory } from "../services/stories.service";
+import type { Story, Template } from "../services/types";
 
 export default function EditStory() {
   const { storyId } = useParams<{ storyId: string }>();
   const navigate = useNavigate();
-  const [story, setStory] = useState<Story | null>(null);
+  const { data: story, isLoading: isLoadingStory } = useStory(storyId || "");
+  const updateStory = useUpdateStory();
+  const [editedStory, setEditedStory] = useState<Story | null>(null);
+  const [newTemplateName, setNewTemplateName] = useState("");
 
-  // Load story from localStorage on component mount
+  // Initialize editedStory when story data is loaded
   useEffect(() => {
-    const savedStories = localStorage.getItem('stories');
-    if (!savedStories || !storyId) return;
-
-    const rootFolder: StoryFolder = JSON.parse(savedStories);
-    const foundStory = findStoryInFolder(rootFolder, storyId);
-
-    if (foundStory) {
-      setStory(foundStory);
-    } else {
-      navigate('/stories');
+    if (story) {
+      setEditedStory(story);
     }
-  }, [storyId, navigate]);
+  }, [story]);
 
-  const handleSubmit = () => {
-    if (!story) return;
+  if (isLoadingStory) {
+    return <div className="p-4">Loading story details...</div>;
+  }
 
-    // Get existing stories from localStorage
-    const savedStories = localStorage.getItem('stories');
-    if (!savedStories) return;
+  if (!story || !editedStory) {
+    return <div className="p-4">Story not found</div>;
+  }
 
-    const rootFolder: StoryFolder = JSON.parse(savedStories);
+  const handleSubmit = async () => {
+    if (!storyId) return;
 
-    // Update the story in the folder structure
-    const updatedFolder = updateStoryInFolder(rootFolder, story);
-
-    // Save the updated folder structure back to localStorage
-    localStorage.setItem('stories', JSON.stringify(updatedFolder));
-
-    // Navigate back to the stories page
-    navigate('/stories');
+    try {
+      await updateStory.mutateAsync({
+        id: storyId,
+        data: editedStory
+      });
+      navigate('/stories');
+    } catch (error) {
+      console.error('Failed to update story:', error);
+    }
   };
 
-  const handleDeleteTest = (testId: string) => {
-    if (!story) return;
-    setStory({
-      ...story,
-      tests: story.tests.filter(test => test.id !== testId)
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedStory({
+      ...editedStory,
+      name: e.target.value
     });
   };
 
-  const getStatusColor = (status: Test['status']) => {
-    switch (status) {
-      case 'passed':
-        return 'text-green-500';
-      case 'failed':
-        return 'text-red-500';
-      default:
-        return 'text-gray-500';
-    }
+  const handleAddTemplate = () => {
+    if (!newTemplateName.trim()) return;
+
+    // Create a new template with the required properties
+    const newTemplate: Template = {
+      id: Date.now(), // Temporary ID for new templates
+      name: newTemplateName.trim(),
+      owner: [], // Empty array for now
+      tests: [], // Empty array for now
+      stories: [] // Empty array for now
+    };
+
+    setEditedStory({
+      ...editedStory,
+      templates: [...(editedStory.templates || []), newTemplate]
+    });
+    setNewTemplateName("");
   };
 
-  const getStatusIcon = (status: Test['status']) => {
-    switch (status) {
-      case 'passed':
-        return '✓';
-      case 'failed':
-        return '✗';
-      default:
-        return '?';
-    }
+  const handleRemoveTemplate = (templateId: number) => {
+    setEditedStory({
+      ...editedStory,
+      templates: editedStory.templates.filter(t => t.id !== templateId)
+    });
   };
-
-  if (!story) {
-    return <div className="p-4">Loading...</div>;
-  }
 
   return (
     <div className="p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Edit Story</h2>
-          <button
-            onClick={() => navigate('/stories')}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            Cancel
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/stories')}
+              className="px-4 py-2 border rounded hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={updateStory.isPending}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            >
+              Save Changes
+            </button>
+          </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Story Title</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Story Name
+              </label>
               <input
                 type="text"
-                value={story.title}
-                onChange={(e) => setStory({ ...story, title: e.target.value })}
-                className="mt-1 block w-full border rounded-md shadow-sm p-2"
-                placeholder="Enter story title"
-                autoComplete="off"
-                data-form-type="other"
+                value={editedStory.name}
+                onChange={handleNameChange}
+                className="w-full border rounded p-2"
+                placeholder="Enter story name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Description</label>
-              <textarea
-                value={story.description}
-                onChange={(e) => setStory({ ...story, description: e.target.value })}
-                className="mt-1 block w-full border rounded-md shadow-sm p-2"
-                placeholder="Enter story description"
-                rows={3}
-                autoComplete="off"
-                data-form-type="other"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Tests in this Story</h3>
-                <button
-                  onClick={() => navigate(`/stories/${story.id}/add-test`)}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  + Add Test
-                </button>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-medium">Templates</h3>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newTemplateName}
+                    onChange={(e) => setNewTemplateName(e.target.value)}
+                    className="border rounded p-2"
+                    placeholder="New template name"
+                  />
+                  <button
+                    onClick={handleAddTemplate}
+                    disabled={!newTemplateName.trim()}
+                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                  >
+                    Add Template
+                  </button>
+                </div>
               </div>
-
               <div className="space-y-2">
-                {story.tests.map((test) => (
-                  <div key={test.id} className="flex items-center justify-between border-t pt-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-medium text-gray-900 hover:text-blue-600 cursor-pointer">
-                        {test.title}
-                      </span>
-                      <span className={`${getStatusColor(test.status)} text-sm`}>
-                        {getStatusIcon(test.status)}
-                      </span>
+                {editedStory.templates?.map(template => (
+                  <div key={template.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium">{template.name}</h4>
+                      <p className="text-sm text-gray-600">
+                        {template.tests?.length || 0} tests
+                      </p>
                     </div>
-                    <div className="flex gap-2">
-                      <Link
-                        to={`/stories/${story.id}/run?testIndex=${story.tests.findIndex(t => t.id === test.id)}`}
-                        className="text-blue-500 hover:text-blue-700"
-                      >
-                        Run Test
-                      </Link>
-                      <button
-                        onClick={() => handleDeleteTest(test.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
+                    <button
+                      onClick={() => handleRemoveTemplate(template.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                {(!editedStory.templates || editedStory.templates.length === 0) && (
+                  <p className="text-sm text-gray-500 italic">No templates associated with this story</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium mb-2">Test Results</h3>
+              <div className="space-y-2">
+                {editedStory.testResults?.map(result => (
+                  <div key={result.id} className="bg-gray-50 p-3 rounded">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{result.test.name}</h4>
+                        <p className="text-sm text-gray-600">
+                          Status: {result.passed ? 'Passed' : 'Failed'}
+                        </p>
+                        {result.notes && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Notes: {result.notes}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
+                {(!editedStory.testResults || editedStory.testResults.length === 0) && (
+                  <p className="text-sm text-gray-500 italic">No test results yet</p>
+                )}
               </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <button
-                onClick={() => navigate('/stories')}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Save Changes
-              </button>
             </div>
           </div>
         </div>

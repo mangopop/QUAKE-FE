@@ -26,13 +26,30 @@ export interface Category {
   updatedAt: string;
 }
 
+export interface Owner {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface Story {
-  id: string;
+  id: number;
   name: string;
-  description?: string;
-  tests: Test[];
-  createdAt: string;
-  updatedAt: string;
+  owner: Owner;
+  templates: Template[];
+  testResults: {
+    id: number;
+    notes: string | null;
+    passed: boolean;
+    test: {
+      id: number;
+      name: string;
+      owner: Owner;
+      notes: string | null;
+      categories: any[][];
+    };
+  }[];
 }
 
 export interface Section {
@@ -49,6 +66,7 @@ export interface Template {
     name: string;
     owner: any[];
     notes: string | null;
+    sections: Section[];
   }[];
   stories: any[];
 }
@@ -87,4 +105,9 @@ export interface CreateTemplateRequest {
   name: string;
   testIds: number[];
   storyIds: number[];
+}
+
+export interface CreateStoryRequest {
+  name: string;
+  templateIds: number[];
 }

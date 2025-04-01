@@ -11,6 +11,7 @@ import AddTestToStory from "./pages/AddTestToStory";
 import EditStory from "./pages/EditStory";
 import RunStory from "./pages/RunStory";
 import EditTest from "./pages/EditTest";
+import StoryDetails from "./pages/StoryDetails";
 
 function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   const location = useLocation();
@@ -107,10 +108,13 @@ export default function App() {
               <Route path=":testId/edit" element={<EditTest />} />
             </Route>
             <Route path="templates" element={<Templates />} />
-            <Route path="stories" element={<Stories />} />
-            <Route path="stories/:storyId/add-test" element={<AddTestToStory />} />
-            <Route path="stories/:storyId/edit" element={<EditStory />} />
-            <Route path="stories/:storyId/run" element={<RunStory />} />
+            <Route path="stories">
+              <Route index element={<Stories />} />
+              <Route path=":storyId" element={<StoryDetails />} />
+              <Route path=":storyId/add-test" element={<AddTestToStory />} />
+              <Route path=":storyId/edit" element={<EditStory />} />
+              <Route path=":storyId/run" element={<RunStory />} />
+            </Route>
           </Route>
         </Routes>
       </Router>
