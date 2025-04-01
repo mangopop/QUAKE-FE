@@ -4,7 +4,7 @@ import { AuthLayout } from "./components/auth/AuthLayout";
 import { LoginForm } from "./components/auth/LoginForm";
 import { RegisterForm } from "./components/auth/RegisterForm";
 import TestList from "./pages/TestList";
-import NewTestEntry from "./pages/TestEntry";
+import NewTestEntry from "./pages/NewTestEntry";
 import Templates from "./pages/Templates";
 import Stories from "./pages/Stories";
 import AddTestToStory from "./pages/AddTestToStory";
@@ -55,7 +55,6 @@ function MainLayout() {
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-1">
                 <NavLink to="/tests">View Tests</NavLink>
-                <NavLink to="/tests/new">Create Test</NavLink>
                 <NavLink to="/templates">Templates</NavLink>
                 <NavLink to="/stories">Stories</NavLink>
               </div>
@@ -105,7 +104,6 @@ export default function App() {
           >
             <Route path="tests">
               <Route index element={<TestList />} />
-              <Route path="new" element={<NewTestEntry />} />
               <Route path=":testId/edit" element={<EditTest />} />
             </Route>
             <Route path="templates">

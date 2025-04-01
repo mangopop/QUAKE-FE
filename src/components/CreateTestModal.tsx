@@ -1,104 +1,185 @@
 import { useState } from "react";
-import { useTemplates } from "../services/templates.service";
-import type { CreateTestRequest } from "../services/types";
+import { useCreateTest } from "../services/tests.service";
+import { useCategories } from "../services/categories.service";
+import type { CreateTestRequest, Category } from "../services/types";
+
+interface Section {
+  name: string;
+  description: string;
+  orderIndex: number;
+}
+
+interface ValidationErrors {
+  name?: string;
+  sections?: { [key: number]: string };
+}
 
 interface CreateTestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (test: CreateTestRequest) => Promise<void>;
-  isSubmitting: boolean;
 }
 
-export default function CreateTestModal({
-  isOpen,
-  onClose,
-  onSubmit,
-  isSubmitting
-}: CreateTestModalProps) {
-  const [newTest, setNewTest] = useState<CreateTestRequest>({
-    name: "",
-    templateId: undefined,
-    sections: []
-  });
-  const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
+export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProps) {
+  const createTest = useCreateTest();
+  const { data: categories } = useCategories();
+  const [name, setName] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [sections, setSections] = useState<Section[]>([{ name: "", description: "", orderIndex: 0 }]);
+  const [errors, setErrors] = useState<ValidationErrors>({});
+
+  const validateForm = (): boolean => {
+    const newErrors: ValidationErrors = {};
+    let isValid = true;
+
+    // Validate test name
+    if (!name.trim()) {
+      newErrors.name = "Test name is required";
+      isValid = false;
+    }
+
+    // Validate sections
+    const sectionErrors: { [key: number]: string } = {};
+    sections.forEach((section, index) => {
+      if (!section.name.trim()) {
+        sectionErrors[index] = "Section name is required";
+        isValid = false;
+      }
+    });
+    if (Object.keys(sectionErrors).length > 0) {
+      newErrors.sections = sectionErrors;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(newTest);
-    setNewTest({ name: "", templateId: undefined, sections: [] });
+
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      const testData: CreateTestRequest = {
+        name: name.trim(),
+        sections: sections.map((section, index) => ({
+          ...section,
+          orderIndex: index
+        }))
+      };
+      await createTest.mutateAsync(testData);
+      onClose();
+      // Reset form
+      setName("");
+      setSelectedCategories([]);
+      setSections([{ name: "", description: "", orderIndex: 0 }]);
+      setErrors({});
+    } catch (error) {
+      console.error("Failed to create test:", error);
+    }
   };
 
   const addSection = () => {
-    setNewTest(prev => ({
-      ...prev,
-      sections: [...prev.sections, { name: "", description: "" }]
-    }));
-  };
-
-  const updateSection = (index: number, key: 'name' | 'description', value: string) => {
-    setNewTest(prev => ({
-      ...prev,
-      sections: prev.sections.map((section, i) =>
-        i === index ? { ...section, [key]: value } : section
-      )
-    }));
+    setSections([...sections, { name: "", description: "", orderIndex: sections.length }]);
   };
 
   const removeSection = (index: number) => {
-    setNewTest(prev => ({
-      ...prev,
-      sections: prev.sections.filter((_, i) => i !== index)
-    }));
+    setSections(sections.filter((_, i) => i !== index));
+    // Clear any errors for the removed section
+    if (errors.sections?.[index]) {
+      const newErrors = { ...errors };
+      if (newErrors.sections) {
+        delete newErrors.sections[index];
+      }
+      setErrors(newErrors);
+    }
   };
+
+  const updateSection = (index: number, field: keyof Section, value: string) => {
+    const newSections = [...sections];
+    newSections[index] = { ...newSections[index], [field]: value };
+    setSections(newSections);
+
+    // Clear error when user types
+    if (field === 'name' && errors.sections?.[index]) {
+      const newErrors = { ...errors };
+      if (newErrors.sections) {
+        delete newErrors.sections[index];
+      }
+      setErrors(newErrors);
+    }
+  };
+
+  const isFormValid = name.trim() !== "" && sections.every(section => section.name.trim() !== "");
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Create New Test</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Create New Test</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
           >
-            ✕
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Test Name
+              Name
             </label>
             <input
               type="text"
-              value={newTest.name}
-              onChange={(e) => setNewTest(prev => ({ ...prev, name: e.target.value }))}
-              className="border p-2 rounded w-full"
-              required
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (errors.name) {
+                  setErrors({ ...errors, name: undefined });
+                }
+              }}
+              className={`border p-2 rounded w-full ${errors.name ? 'border-red-500' : ''}`}
+              placeholder="Enter test name"
             />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+            )}
           </div>
 
-          <div className="mb-4">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Template (Optional)
+              Categories
             </label>
-            <select
-              value={newTest.templateId || ""}
-              onChange={(e) => setNewTest(prev => ({ ...prev, templateId: e.target.value ? e.target.value : undefined }))}
-              className="border p-2 rounded w-full"
-            >
-              <option value="">Select a template...</option>
-              {templates?.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
+            <div className="space-y-2">
+              {categories?.data?.map((category: Category) => (
+                <label key={category.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(category.id.toString())}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCategories([...selectedCategories, category.id.toString()]);
+                      } else {
+                        setSelectedCategories(
+                          selectedCategories.filter((id) => id !== category.id.toString())
+                        );
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  {category.name}
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
-          <div className="mb-4">
+          <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-medium text-gray-700">
                 Sections
@@ -106,59 +187,79 @@ export default function CreateTestModal({
               <button
                 type="button"
                 onClick={addSection}
-                className="text-sm text-blue-500 hover:text-blue-600"
+                className="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1"
               >
-                + Add Section
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Section
               </button>
             </div>
             <div className="space-y-4">
-              {newTest.sections.map((section, index) => (
-                <div key={index} className="border p-4 rounded">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium">Section {index + 1}</h4>
-                    <button
-                      type="button"
-                      onClick={() => removeSection(index)}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      Remove
-                    </button>
+              {sections.map((section, index) => (
+                <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-sm font-medium text-gray-700">Section {index + 1}</h3>
+                    {sections.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeSection(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Section Name"
-                      value={section.name}
-                      onChange={(e) => updateSection(index, 'name', e.target.value)}
-                      className="border p-2 rounded w-full"
-                    />
-                    <textarea
-                      placeholder="Section Description"
-                      value={section.description}
-                      onChange={(e) => updateSection(index, 'description', e.target.value)}
-                      className="border p-2 rounded w-full"
-                      rows={3}
-                    />
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Name</label>
+                      <input
+                        type="text"
+                        value={section.name}
+                        onChange={(e) => updateSection(index, "name", e.target.value)}
+                        className={`border p-2 rounded w-full ${errors.sections?.[index] ? 'border-red-500' : ''}`}
+                        placeholder="Section name"
+                      />
+                      {errors.sections?.[index] && (
+                        <p className="mt-1 text-sm text-red-500">{errors.sections[index]}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Description</label>
+                      <textarea
+                        value={section.description}
+                        onChange={(e) => updateSection(index, "description", e.target.value)}
+                        className="border p-2 rounded w-full"
+                        rows={2}
+                        placeholder="Section description"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              disabled={!isFormValid}
+              className={`px-4 py-2 rounded ${
+                isFormValid
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Create Test
+            </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:text-gray-900"
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
             >
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Creating...' : 'Create Test'}
             </button>
           </div>
         </form>

@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTests, useDeleteTest } from "../services/tests.service";
 import type { Test } from "../services/types";
+import CreateTestModal from "../components/CreateTestModal";
 
 export default function TestList() {
   const [searchQuery, setSearchQuery] = useState("");
   const { data: tests, isLoading } = useTests();
   const deleteTest = useDeleteTest();
   const navigate = useNavigate();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const handleDeleteTest = async (id: number) => {
     try {
@@ -30,7 +32,7 @@ export default function TestList() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Tests</h2>
         <button
-          onClick={() => navigate('/tests/new')}
+          onClick={() => setIsCreateModalOpen(true)}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,21 +59,14 @@ export default function TestList() {
             <div className="p-4">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{test.name}</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{test.name}</h3>
+                    <span className="text-sm text-gray-600">
+                      <span className="font-medium">{test.sections?.length || 0}</span> sections
+                    </span>
+                  </div>
                   {test.notes && (
                     <p className="text-sm text-gray-500">{test.notes}</p>
-                  )}
-                  {(test.categories || []).length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {(test.categories || []).map((category, index) => (
-                        <span
-                          key={index}
-                          className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"
-                        >
-                          {category.name}
-                        </span>
-                      ))}
-                    </div>
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -97,7 +92,7 @@ export default function TestList() {
               </div>
 
               <div className="space-y-3">
-                {(test.sections || []).map((section, index) => (
+                {test.sections.map((section, index) => (
                   <div key={index} className="bg-gray-50 rounded-lg p-3">
                     <div className="flex justify-between items-center">
                       <div>
@@ -106,17 +101,8 @@ export default function TestList() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-sm text-gray-600">
-                          <span className="font-medium">{(test.categories || []).length}</span> categories
+                          <span className="font-medium">{test.categories.length}</span> categories
                         </div>
-                        <Link
-                          to={`/tests/${test.id}`}
-                          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                          </svg>
-                          View Details
-                        </Link>
                       </div>
                     </div>
                   </div>
@@ -126,6 +112,11 @@ export default function TestList() {
           </div>
         ))}
       </div>
+
+      <CreateTestModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   );
 }
