@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
-import type { ApiResponse, Story, CreateStoryRequest, Test } from './types';
+import type { ApiResponse, Story, CreateStoryRequest, Test, Template } from './types';
 
 const ENDPOINTS = {
   stories: '/api/stories',
@@ -8,12 +8,14 @@ const ENDPOINTS = {
   storyTestResults: (id: string) => `/api/stories/${id}/test-results`,
   testResults: '/api/test-results',
   testsByTemplate: (templateId: number) => `/api/tests/by-template/${templateId}`,
+  templates: '/api/templates',
 } as const;
 
 export const queryKeys = {
   stories: ['stories'],
   story: (id: string) => ['story', id],
   testsByTemplate: (templateId: number) => ['tests', 'template', templateId],
+  templates: ['templates'],
 } as const;
 
 interface TestResultRequest {
@@ -53,6 +55,11 @@ export const storiesService = {
     return response.data;
   },
 
+  getTemplates: async () => {
+    const response = await apiClient.get<Template[]>(ENDPOINTS.templates);
+    return response.data;
+  },
+
   saveTestResult: async (storyId: string, data: TestResultRequest) => {
     const response = await apiClient.post<Story>(ENDPOINTS.storyTestResults(storyId), data);
     return response.data;
@@ -79,6 +86,13 @@ export const useTestsByTemplate = (templateId: number) => {
     queryKey: queryKeys.testsByTemplate(templateId),
     queryFn: () => storiesService.getTestsByTemplate(templateId),
     enabled: !!templateId,
+  });
+};
+
+export const useTemplates = () => {
+  return useQuery({
+    queryKey: queryKeys.templates,
+    queryFn: storiesService.getTemplates,
   });
 };
 

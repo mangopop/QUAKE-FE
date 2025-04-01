@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useStory, useUpdateStory } from "../services/stories.service";
+import { useStory, useUpdateStory, useTemplates } from "../services/stories.service";
 import type { Story, Template } from "../services/types";
 
 export default function EditStory() {
   const { storyId } = useParams<{ storyId: string }>();
   const navigate = useNavigate();
   const { data: story, isLoading: isLoadingStory } = useStory(storyId || "");
+  const { data: availableTemplates, isLoading: isLoadingTemplates } = useTemplates();
   const updateStory = useUpdateStory();
   const [editedStory, setEditedStory] = useState<Story | null>(null);
-  const [newTemplateName, setNewTemplateName] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
 
   // Initialize editedStory when story data is loaded
   useEffect(() => {
@@ -18,11 +19,11 @@ export default function EditStory() {
     }
   }, [story]);
 
-  if (isLoadingStory) {
+  if (isLoadingStory || isLoadingTemplates) {
     return <div className="p-4">Loading story details...</div>;
   }
 
-  if (!story || !editedStory) {
+  if (!story || !editedStory || !availableTemplates) {
     return <div className="p-4">Story not found</div>;
   }
 
@@ -48,30 +49,32 @@ export default function EditStory() {
   };
 
   const handleAddTemplate = () => {
-    if (!newTemplateName.trim()) return;
+    if (!selectedTemplateId) return;
 
-    // Create a new template with the required properties
-    const newTemplate: Template = {
-      id: Date.now(), // Temporary ID for new templates
-      name: newTemplateName.trim(),
-      owner: [], // Empty array for now
-      tests: [], // Empty array for now
-      stories: [] // Empty array for now
-    };
+    const templateToAdd = availableTemplates.find((t: Template) => t.id === Number(selectedTemplateId));
+    if (!templateToAdd) return;
 
-    setEditedStory({
-      ...editedStory,
-      templates: [...(editedStory.templates || []), newTemplate]
-    });
-    setNewTemplateName("");
+    // Check if template is already added
+    if (!editedStory.templates.some((t: Template) => t.id === templateToAdd.id)) {
+      setEditedStory({
+        ...editedStory,
+        templates: [...editedStory.templates, templateToAdd]
+      });
+    }
+    setSelectedTemplateId("");
   };
 
   const handleRemoveTemplate = (templateId: number) => {
     setEditedStory({
       ...editedStory,
-      templates: editedStory.templates.filter(t => t.id !== templateId)
+      templates: editedStory.templates.filter((t: Template) => t.id !== templateId)
     });
   };
+
+  // Get templates that are not already added to the story
+  const availableTemplatesToAdd = availableTemplates.filter(
+    (template: Template) => !editedStory.templates.some((t: Template) => t.id === template.id)
+  );
 
   return (
     <div className="p-4">
@@ -114,16 +117,21 @@ export default function EditStory() {
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-medium">Templates</h3>
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newTemplateName}
-                    onChange={(e) => setNewTemplateName(e.target.value)}
-                    className="border rounded p-2"
-                    placeholder="New template name"
-                  />
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    className="border rounded p-2 pr-8"
+                  >
+                    <option value="">Select a template</option>
+                    {availableTemplatesToAdd.map((template: Template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     onClick={handleAddTemplate}
-                    disabled={!newTemplateName.trim()}
+                    disabled={!selectedTemplateId}
                     className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
                   >
                     Add Template
@@ -131,7 +139,7 @@ export default function EditStory() {
                 </div>
               </div>
               <div className="space-y-2">
-                {editedStory.templates?.map(template => (
+                {editedStory.templates?.map((template: Template) => (
                   <div key={template.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
                     <div>
                       <h4 className="font-medium">{template.name}</h4>
