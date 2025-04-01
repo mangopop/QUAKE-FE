@@ -1,36 +1,22 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useStories, useCreateStory, useUpdateStory, useDeleteStory } from "../services/stories.service";
-import type { Story, CreateStoryRequest } from "../services/types";
+import { useStories, useCreateStory, useDeleteStory } from "../services/stories.service";
+import type { Story } from "../services/types";
+import CreateStoryModal from "../components/CreateStoryModal";
 
 export default function Stories() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [newStory, setNewStory] = useState<CreateStoryRequest>({
-    name: "",
-    templateIds: []
-  });
-
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data: stories, isLoading } = useStories();
   const createStory = useCreateStory();
-  const updateStory = useUpdateStory();
   const deleteStory = useDeleteStory();
 
-  const handleCreateStory = async () => {
-    if (!newStory.name) return;
-
+  const handleCreateStory = async (story: { name: string; templateIds: number[] }) => {
     try {
-      await createStory.mutateAsync(newStory);
-      setNewStory({ name: "", templateIds: [] });
+      await createStory.mutateAsync(story);
+      setIsCreateModalOpen(false);
     } catch (error) {
       console.error('Failed to create story:', error);
-    }
-  };
-
-  const handleUpdateStory = async (id: number, data: Partial<Story>) => {
-    try {
-      await updateStory.mutateAsync({ id: id.toString(), data });
-    } catch (error) {
-      console.error('Failed to update story:', error);
     }
   };
 
@@ -43,7 +29,7 @@ export default function Stories() {
   };
 
   if (isLoading) {
-    return <div>Loading stories...</div>;
+    return <div>Loading...</div>;
   }
 
   const filteredStories = (stories || []).filter(story =>
@@ -55,10 +41,10 @@ export default function Stories() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Stories</h2>
         <button
-          onClick={() => setNewStory({ name: "", templateIds: [] })}
-          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
-          Create New Story
+          Create Story
         </button>
       </div>
 
@@ -73,45 +59,39 @@ export default function Stories() {
         />
       </div>
 
-      {/* Create Story Form */}
-      <div className="mb-4 p-4 border rounded">
-        <h3 className="text-lg font-semibold mb-2">Create New Story</h3>
-        <input
-          type="text"
-          placeholder="Story Name"
-          value={newStory.name}
-          onChange={(e) => setNewStory({ ...newStory, name: e.target.value })}
-          className="border p-2 rounded w-full mb-2"
-        />
-        <button
-          onClick={handleCreateStory}
-          disabled={createStory.isPending}
-          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          {createStory.isPending ? 'Creating...' : 'Create Story'}
-        </button>
-      </div>
+      {/* Create Story Modal */}
+      <CreateStoryModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateStory}
+        isSubmitting={createStory.isPending}
+      />
 
-      {/* Stories List */}
+      {/* Stories list */}
       <div className="space-y-4">
         {filteredStories.map((story) => (
           <div key={story.id} className="p-4 border rounded">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-lg font-semibold">{story.name}</h3>
-                <p className="text-gray-600 mt-1">
-                  Created by {story.owner.firstName} {story.owner.lastName}
-                </p>
-                <p className="text-gray-600 mt-1">
+                <Link to={`/stories/${story.id}`} className="text-lg font-semibold hover:text-blue-600">
+                  {story.name}
+                </Link>
+                <p className="text-sm text-gray-500 mt-1">
                   Templates: {story.templates.length}
                 </p>
               </div>
               <div className="flex gap-2">
                 <Link
                   to={`/stories/${story.id}`}
+                  className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
+                >
+                  View
+                </Link>
+                <Link
+                  to={`/stories/${story.id}/edit`}
                   className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
                 >
-                  View Details
+                  Edit
                 </Link>
                 <button
                   onClick={() => handleDeleteStory(story.id)}
@@ -122,6 +102,22 @@ export default function Stories() {
                 </button>
               </div>
             </div>
+
+            {story.templates.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-medium mb-2">Templates</h4>
+                <div className="space-y-2">
+                  {story.templates.map((template) => (
+                    <div key={template.id} className="border-t pt-2">
+                      <div className="font-medium">{template.name}</div>
+                      <p className="text-sm text-gray-600">
+                        {template.tests?.length || 0} tests
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -38,6 +38,7 @@ export interface Story {
   name: string;
   owner: Owner;
   templates: Template[];
+  templateIds?: number[];
   testResults: {
     id: number;
     notes: string | null;

@@ -6,7 +6,6 @@ const ENDPOINTS = {
   stories: '/api/stories',
   story: (id: string) => `/api/stories/${id}`,
   storyTestResults: (id: string) => `/api/stories/${id}/test-results`,
-  testResults: '/api/test-results',
   testsByTemplate: (templateId: number) => `/api/tests/by-template/${templateId}`,
   templates: '/api/templates',
 } as const;
@@ -62,6 +61,14 @@ export const storiesService = {
 
   saveTestResult: async (storyId: string, data: TestResultRequest) => {
     const response = await apiClient.post<Story>(ENDPOINTS.storyTestResults(storyId), data);
+    return response.data;
+  },
+
+  updateTestResult: async (storyId: string, testId: number, data: { passed: boolean; notes?: string | null }) => {
+    const response = await apiClient.put(ENDPOINTS.storyTestResults(storyId), {
+      testId,
+      ...data
+    });
     return response.data;
   },
 };
@@ -141,5 +148,17 @@ export const useSaveTestResult = () => {
     onSuccess: (_, { storyId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.story(storyId) });
     },
+  });
+};
+
+export const useUpdateTestResult = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ storyId, testId, data }: { storyId: string; testId: number; data: { passed: boolean; notes?: string | null } }) =>
+      storiesService.updateTestResult(storyId, testId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.story(variables.storyId) });
+    }
   });
 };

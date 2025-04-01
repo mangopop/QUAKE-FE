@@ -33,7 +33,10 @@ export default function EditStory() {
     try {
       await updateStory.mutateAsync({
         id: storyId,
-        data: editedStory
+        data: {
+          name: editedStory.name,
+          templateIds: editedStory.templates.map(template => template.id)
+        }
       });
       navigate('/stories');
     } catch (error) {
