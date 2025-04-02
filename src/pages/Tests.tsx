@@ -5,7 +5,7 @@ import type { Test, CreateTestRequest } from "../services/types";
 
 export default function Tests() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: tests, isLoading } = useTests();
+  const { data: testsData, isLoading } = useTests();
   const createTest = useCreateTest();
   const deleteTest = useDeleteTest();
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export default function Tests() {
 
   const handleDeleteTest = async (id: number) => {
     try {
-      await deleteTest.mutateAsync(id.toString());
+      await deleteTest.mutateAsync(id);
     } catch (error) {
       console.error('Failed to delete test:', error);
     }
@@ -30,7 +30,7 @@ export default function Tests() {
     return <div>Loading...</div>;
   }
 
-  const filteredTests = (tests || []).filter(test =>
+  const filteredTests = (testsData?.data || []).filter(test =>
     test.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -38,26 +38,21 @@ export default function Tests() {
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Tests</h2>
-        <button
-          onClick={() => navigate('/tests/new')}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Test
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search tests..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="border p-2 rounded w-full"
-        />
+        <div className="flex gap-4">
+          <input
+            type="text"
+            placeholder="Search tests..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border p-2 rounded"
+          />
+          <button
+            onClick={() => navigate('/tests/new')}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            New Test
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-4">
