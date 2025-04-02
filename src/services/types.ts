@@ -75,7 +75,7 @@ export interface Template {
 export interface Test {
   id: number;
   name: string;
-  owner: any[];
+  owner: Owner;
   notes: string | null;
   categories: any[];
   templateId?: string;

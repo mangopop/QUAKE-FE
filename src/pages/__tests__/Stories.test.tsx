@@ -239,4 +239,16 @@ describe('Stories Component', () => {
     expect(deleteButtons[0]).toHaveClass("text-gray-500", "hover:text-red-500");
     expect(runButtons[0]).toHaveClass("bg-green-500", "hover:bg-green-600");
   })
+
+  it('displays owner information for each story', async () => {
+    await renderStories();
+
+    // Check for owner names
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+    expect(screen.getByText("Jane Smith")).toBeInTheDocument();
+
+    // Check for owner emails
+    expect(screen.getByText("john.doe@example.com")).toBeInTheDocument();
+    expect(screen.getByText("jane.smith@example.com")).toBeInTheDocument();
+  })
 })

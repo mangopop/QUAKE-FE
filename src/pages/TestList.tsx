@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTests, useDeleteTest } from "../services/tests.service";
-import type { Test } from "../services/types";
+import type { Test, Owner } from "../services/types";
 import CreateTestModal from "../components/CreateTestModal";
 
 export default function TestList() {
@@ -59,11 +59,14 @@ export default function TestList() {
             <div className="p-4">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-4 mb-1">
                     <h3 className="text-lg font-semibold text-gray-900">{test.name}</h3>
                     <span className="text-sm text-gray-600">
                       <span className="font-medium">{test.sections?.length || 0}</span> sections
                     </span>
+                    {test.owner && (
+                      <p className="text-sm text-gray-500">Owner: {test.owner.firstName} {test.owner.lastName}</p>
+                    )}
                   </div>
                   {test.notes && (
                     <p className="text-sm text-gray-500">{test.notes}</p>

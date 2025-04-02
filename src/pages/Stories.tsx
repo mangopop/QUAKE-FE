@@ -102,8 +102,11 @@ export default function Stories() {
           <div key={story.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition-colors">
             <div className="p-4">
               <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{story.name}</h3>
+                <div className="flex items-center gap-4">
+                  <h3 className="text-lg font-semibold text-gray-900">{story.name}</h3>
+                  {story.owner && (
+                    <p className="text-sm text-gray-500">Owner: {story.owner.firstName} {story.owner.lastName}</p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
