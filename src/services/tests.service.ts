@@ -57,6 +57,7 @@ export const useTests = (params?: GetTestsParams) => {
   return useQuery({
     queryKey: queryKeys.tests(params),
     queryFn: () => testsService.getAll(params),
+    placeholderData: (previousData) => previousData
   });
 };
 
