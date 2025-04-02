@@ -9,11 +9,20 @@ import SearchInput from "../components/SearchInput";
 import ActionButtons from "../components/ActionButtons";
 import Card from "../components/Card";
 
+const ITEMS_PER_PAGE = 5;
+
 export default function TestList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedOwner, setSelectedOwner] = useState<number>(0);
-  const { data: tests, isLoading } = useTests();
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: testsData, isLoading } = useTests({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    search: searchQuery,
+    category: selectedCategory || undefined,
+    ownerId: selectedOwner || undefined
+  });
   const deleteTest = useDeleteTest();
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -23,7 +32,7 @@ export default function TestList() {
     const categoriesSet = new Set<string>();
     const ownersMap = new Map<number, Owner>();
 
-    tests?.forEach(test => {
+    testsData?.data?.forEach(test => {
       test.categories?.forEach(category => {
         categoriesSet.add(typeof category === 'string' ? category : category.name);
       });
@@ -36,7 +45,7 @@ export default function TestList() {
       categories: Array.from(categoriesSet),
       owners: Array.from(ownersMap.values())
     };
-  }, [tests]);
+  }, [testsData?.data]);
 
   const handleDeleteTest = async (id: number) => {
     try {
@@ -50,16 +59,21 @@ export default function TestList() {
     return <div>Loading...</div>;
   }
 
-  const filteredTests = (tests || []).filter(test => {
-    const matchesSearch = test.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory ||
-      test.categories?.some(category =>
-        (typeof category === 'string' ? category : category.name) === selectedCategory
-      );
-    const matchesOwner = !selectedOwner || test.owner?.id === selectedOwner;
-
-    return matchesSearch && matchesCategory && matchesOwner;
-  });
+  // Reset to first page when filters change
+  const handleFilterChange = (newValue: string | number, type: 'search' | 'category' | 'owner') => {
+    setCurrentPage(1);
+    switch (type) {
+      case 'search':
+        setSearchQuery(newValue as string);
+        break;
+      case 'category':
+        setSelectedCategory(newValue as string);
+        break;
+      case 'owner':
+        setSelectedOwner(newValue as number);
+        break;
+    }
+  };
 
   return (
     <div className="p-4">
@@ -75,7 +89,7 @@ export default function TestList() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleFilterChange(e.target.value, 'search')}
               placeholder="Search tests..."
               className="border p-2 rounded w-full"
             />
@@ -84,7 +98,7 @@ export default function TestList() {
           <div className="flex-1">
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => handleFilterChange(e.target.value, 'category')}
               className="border p-2 rounded w-full"
             >
               <option value="">All Categories</option>
@@ -99,7 +113,7 @@ export default function TestList() {
           <div className="flex-1">
             <select
               value={selectedOwner}
-              onChange={(e) => setSelectedOwner(Number(e.target.value))}
+              onChange={(e) => handleFilterChange(Number(e.target.value), 'owner')}
               className="border p-2 rounded w-full"
             >
               <option value={0}>All Owners</option>
@@ -114,7 +128,7 @@ export default function TestList() {
       </div>
 
       <div className="grid gap-4">
-        {filteredTests.map((test) => (
+        {testsData?.data?.map((test) => (
           <Card key={test.id}>
             <div className="flex justify-between items-start mb-3">
               <div>
@@ -162,6 +176,28 @@ export default function TestList() {
           </Card>
         ))}
       </div>
+
+      {testsData?.totalPages && testsData.totalPages > 1 && (
+        <div className="mt-6 flex justify-center items-center gap-2">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            Previous
+          </button>
+          <span className="px-3 py-1">
+            Page {currentPage} of {testsData.totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, testsData.totalPages))}
+            disabled={currentPage === testsData.totalPages}
+            className="px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       <CreateTestModal
         isOpen={isCreateModalOpen}

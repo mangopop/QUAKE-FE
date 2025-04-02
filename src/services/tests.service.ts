@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
-import type { ApiResponse, Test, CreateTestRequest } from './types';
+import type { ApiResponse, Test, CreateTestRequest, PaginatedTestsResponse } from './types';
 
 const ENDPOINTS = {
   tests: '/api/tests',
@@ -8,13 +8,22 @@ const ENDPOINTS = {
 } as const;
 
 export const queryKeys = {
-  tests: ['tests'],
+  tests: (params?: { page?: number; limit?: number; search?: string; category?: string; ownerId?: number }) =>
+    ['tests', params],
   test: (id: string) => ['test', id],
 } as const;
 
+interface GetTestsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  ownerId?: number;
+}
+
 export const testsService = {
-  getAll: async () => {
-    const response = await apiClient.get<Test[]>(ENDPOINTS.tests);
+  getAll: async (params?: GetTestsParams) => {
+    const response = await apiClient.get<PaginatedTestsResponse>(ENDPOINTS.tests, { params });
     return response.data;
   },
 
@@ -39,10 +48,10 @@ export const testsService = {
   },
 };
 
-export const useTests = () => {
+export const useTests = (params?: GetTestsParams) => {
   return useQuery({
-    queryKey: queryKeys.tests,
-    queryFn: testsService.getAll,
+    queryKey: queryKeys.tests(params),
+    queryFn: () => testsService.getAll(params),
   });
 };
 
@@ -60,7 +69,7 @@ export const useCreateTest = () => {
   return useMutation({
     mutationFn: testsService.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tests() });
     },
   });
 };
@@ -72,7 +81,7 @@ export const useUpdateTest = () => {
     mutationFn: ({ id, data }: { id: string; data: Partial<Test> }) =>
       testsService.update(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tests() });
       queryClient.invalidateQueries({ queryKey: queryKeys.test(id) });
     },
   });
@@ -84,7 +93,7 @@ export const useDeleteTest = () => {
   return useMutation({
     mutationFn: testsService.delete,
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tests });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tests() });
       queryClient.invalidateQueries({ queryKey: queryKeys.test(id) });
     },
   });

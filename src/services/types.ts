@@ -77,9 +77,17 @@ export interface Test {
   name: string;
   owner: Owner;
   notes: string | null;
-  categories: any[];
+  categories: (string | Category)[];
   templateId?: string;
   sections: Section[];
+}
+
+export interface PaginatedTestsResponse {
+  data: Test[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export interface CreateTestRequest {
