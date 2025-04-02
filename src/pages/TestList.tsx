@@ -4,14 +4,18 @@ import TestFilters from '../components/TestFilters'
 import TestCard from '../components/TestCard'
 import NoResults from '../components/NoResults'
 import Pagination from '../components/Pagination'
+import CreateTestModal from '../components/CreateTestModal'
 import type { Test, Owner, Category } from '../services/types'
+import { useNavigate } from 'react-router-dom'
 
 export default function TestList() {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedOwnerId, setSelectedOwnerId] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const itemsPerPage = 10
 
   // Debounce search query
@@ -54,7 +58,11 @@ export default function TestList() {
   }
 
   const handleCreateNew = () => {
-    // TODO: Implement create new test functionality
+    setIsCreateModalOpen(true)
+  }
+
+  const handleEdit = (test: Test) => {
+    navigate(`/tests/${test.id}/edit`)
   }
 
   const handlePageChange = (page: number) => {
@@ -109,7 +117,7 @@ export default function TestList() {
                 <TestCard
                   key={test.id}
                   test={test}
-                  onEdit={() => {}}
+                  onEdit={() => handleEdit(test)}
                   onDelete={() => handleDelete(test.id)}
                 />
               ))}
@@ -124,6 +132,11 @@ export default function TestList() {
           />
         </>
       )}
+
+      <CreateTestModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   )
 }

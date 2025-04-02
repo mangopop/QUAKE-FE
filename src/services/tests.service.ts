@@ -99,8 +99,8 @@ export const useDeleteTest = () => {
   return useMutation({
     mutationFn: (id: number) => testsService.delete(id),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tests() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.test(String(id)) });
+      queryClient.invalidateQueries({ queryKey: ['tests'] });
+      queryClient.invalidateQueries({ queryKey: ['test'] });
     },
   });
 };

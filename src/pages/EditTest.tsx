@@ -8,7 +8,7 @@ import Section from "../components/Section";
 export default function EditTest() {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
-  const { data: test, isLoading: isLoadingTest } = useTest(testId || "");
+  const { data: test, isLoading: isLoadingTest } = useTest(testId || "0");
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
   const updateTest = useUpdateTest();
 
@@ -33,7 +33,7 @@ export default function EditTest() {
     if (!testId) return;
 
     try {
-      await updateTest.mutateAsync({ id: testId, data: formData });
+      await updateTest.mutateAsync({ id: Number(testId), data: formData });
       navigate("/tests");
     } catch (error) {
       console.error('Failed to update test:', error);

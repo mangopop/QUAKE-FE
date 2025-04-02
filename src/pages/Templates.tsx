@@ -19,6 +19,10 @@ export default function Templates() {
     }
   };
 
+  const handleCreateNew = () => {
+    setIsCreateModalOpen(true);
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -32,7 +36,7 @@ export default function Templates() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Templates</h2>
         <button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={handleCreateNew}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
