@@ -1,48 +1,23 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../lib/api-client';
+import { useQuery } from '@tanstack/react-query';
 import type { Template, CreateTemplateRequest } from './types';
+import { BaseService, BaseEndpoints } from './base.service';
 
-const ENDPOINTS = {
-  templates: '/api/templates',
-  template: (id: string) => `/api/templates/${id}`,
-} as const;
+const ENDPOINTS: BaseEndpoints = {
+  base: '/api/templates',
+  item: (id: string) => `/api/templates/${id}`,
+};
+
+const templatesService = new BaseService<Template, CreateTemplateRequest>(ENDPOINTS, 'templates');
 
 export const queryKeys = {
-  templates: ['templates'],
-  template: (id: string) => ['template', id],
-} as const;
-
-export const templatesService = {
-  getAll: async () => {
-    const response = await apiClient.get<Template[]>(ENDPOINTS.templates);
-    return response.data;
-  },
-
-  getById: async (id: string) => {
-    const response = await apiClient.get<Template>(ENDPOINTS.template(id));
-    return response.data;
-  },
-
-  create: async (data: CreateTemplateRequest) => {
-    const response = await apiClient.post<Template>(ENDPOINTS.templates, data);
-    return response.data;
-  },
-
-  update: async (id: string, data: Partial<CreateTemplateRequest>) => {
-    const response = await apiClient.put<Template>(ENDPOINTS.template(id), data);
-    return response.data;
-  },
-
-  delete: async (id: string) => {
-    const response = await apiClient.delete<void>(ENDPOINTS.template(id));
-    return response.data;
-  },
+  templates: templatesService.getQueryKey(),
+  template: (id: string) => templatesService.getItemQueryKey(id),
 };
 
 export const useTemplates = () => {
   return useQuery({
     queryKey: queryKeys.templates,
-    queryFn: templatesService.getAll,
+    queryFn: () => templatesService.getAll(),
   });
 };
 
@@ -54,38 +29,6 @@ export const useTemplate = (id: string) => {
   });
 };
 
-export const useCreateTemplate = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: templatesService.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.templates });
-    },
-  });
-};
-
-export const useUpdateTemplate = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CreateTemplateRequest> }) =>
-      templatesService.update(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.templates });
-      queryClient.invalidateQueries({ queryKey: queryKeys.template(id) });
-    },
-  });
-};
-
-export const useDeleteTemplate = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: templatesService.delete,
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.templates });
-      queryClient.invalidateQueries({ queryKey: queryKeys.template(id) });
-    },
-  });
-};
+export const useCreateTemplate = () => templatesService.useCreate();
+export const useUpdateTemplate = () => templatesService.useUpdate();
+export const useDeleteTemplate = () => templatesService.useDelete();

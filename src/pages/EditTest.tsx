@@ -17,7 +17,7 @@ export default function EditTest() {
   const [formData, setFormData] = useState<CreateTestRequest>({
     name: "",
     templateId: undefined,
-    sections: []
+    sections: [{ name: "", description: "" }]
   });
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function EditTest() {
       setFormData({
         name: test.name,
         templateId: test.templateId,
-        sections: test.sections || []
+        sections: test.sections?.length ? test.sections : [{ name: "", description: "" }]
       });
     }
   }, [test]);
@@ -61,7 +61,9 @@ export default function EditTest() {
   const removeSection = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      sections: prev.sections.filter((_, i) => i !== index)
+      sections: prev.sections.length > 1
+        ? prev.sections.filter((_, i) => i !== index)
+        : [{ name: "", description: "" }] // Keep at least one section
     }));
   };
 

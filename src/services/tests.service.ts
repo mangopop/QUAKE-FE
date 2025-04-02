@@ -1,56 +1,23 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../lib/api-client';
-import type { ApiResponse, Test, CreateTestRequest, PaginatedTestsResponse } from './types';
+import { useQuery } from '@tanstack/react-query';
+import type { Test, CreateTestRequest, PaginatedTestsResponse } from './types';
+import { BaseService, BaseEndpoints, BaseQueryParams } from './base.service';
 
-const ENDPOINTS = {
-  tests: '/api/tests',
-  test: (id: string) => `/api/tests/${id}`,
+const ENDPOINTS: BaseEndpoints = {
+  base: '/api/tests',
+  item: (id: string) => `/api/tests/${id}`,
   search: '/api/tests/search',
-} as const;
+};
 
-export const queryKeys = {
-  tests: (params?: { page?: number; limit?: number; q?: string; category?: string; ownerId?: number }) =>
-    ['tests', params],
-  test: (id: string) => ['test', id],
-} as const;
+const testsService = new BaseService<Test, CreateTestRequest>(ENDPOINTS, 'tests');
 
-interface GetTestsParams {
-  page?: number;
-  limit?: number;
-  q?: string;
+interface GetTestsParams extends BaseQueryParams {
   category?: string;
   ownerId?: number;
 }
 
-export const testsService = {
-  getAll: async (params?: GetTestsParams) => {
-    if (params?.q || params?.category || params?.ownerId) {
-      const response = await apiClient.get<PaginatedTestsResponse>(ENDPOINTS.search, { params });
-      return response.data;
-    }
-    const response = await apiClient.get<PaginatedTestsResponse>(ENDPOINTS.tests, { params });
-    return response.data;
-  },
-
-  getById: async (id: number) => {
-    const response = await apiClient.get<Test>(ENDPOINTS.test(String(id)));
-    return response.data;
-  },
-
-  create: async (data: CreateTestRequest) => {
-    const response = await apiClient.post<Test>(ENDPOINTS.tests, data);
-    return response.data;
-  },
-
-  update: async (id: number, data: Partial<Test>) => {
-    const response = await apiClient.put<Test>(ENDPOINTS.test(String(id)), data);
-    return response.data;
-  },
-
-  delete: async (id: number) => {
-    const response = await apiClient.delete<void>(ENDPOINTS.test(String(id)));
-    return response.data;
-  },
+export const queryKeys = {
+  tests: (params?: GetTestsParams) => testsService.getQueryKey(params),
+  test: (id: string) => testsService.getItemQueryKey(id),
 };
 
 export const useTests = (params?: GetTestsParams) => {
@@ -64,43 +31,11 @@ export const useTests = (params?: GetTestsParams) => {
 export const useTest = (id: string) => {
   return useQuery({
     queryKey: queryKeys.test(id),
-    queryFn: () => testsService.getById(Number(id)),
+    queryFn: () => testsService.getById(id),
     enabled: !!id,
   });
 };
 
-export const useCreateTest = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: testsService.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tests() });
-    },
-  });
-};
-
-export const useUpdateTest = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Test> }) =>
-      testsService.update(id, data),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tests() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.test(String(id)) });
-    },
-  });
-};
-
-export const useDeleteTest = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) => testsService.delete(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: ['tests'] });
-      queryClient.invalidateQueries({ queryKey: ['test'] });
-    },
-  });
-};
+export const useCreateTest = () => testsService.useCreate();
+export const useUpdateTest = () => testsService.useUpdate();
+export const useDeleteTest = () => testsService.useDelete();
