@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTests, useDeleteTest } from "../services/tests.service";
 import type { Test, Owner } from "../services/types";
@@ -11,10 +11,32 @@ import Card from "../components/Card";
 
 export default function TestList() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedOwner, setSelectedOwner] = useState<number>(0);
   const { data: tests, isLoading } = useTests();
   const deleteTest = useDeleteTest();
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Extract unique categories and owners from tests
+  const { categories, owners } = useMemo(() => {
+    const categoriesSet = new Set<string>();
+    const ownersMap = new Map<number, Owner>();
+
+    tests?.forEach(test => {
+      test.categories?.forEach(category => {
+        categoriesSet.add(typeof category === 'string' ? category : category.name);
+      });
+      if (test.owner) {
+        ownersMap.set(test.owner.id, test.owner);
+      }
+    });
+
+    return {
+      categories: Array.from(categoriesSet),
+      owners: Array.from(ownersMap.values())
+    };
+  }, [tests]);
 
   const handleDeleteTest = async (id: number) => {
     try {
@@ -28,9 +50,16 @@ export default function TestList() {
     return <div>Loading...</div>;
   }
 
-  const filteredTests = (tests || []).filter(test =>
-    test.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTests = (tests || []).filter(test => {
+    const matchesSearch = test.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory ||
+      test.categories?.some(category =>
+        (typeof category === 'string' ? category : category.name) === selectedCategory
+      );
+    const matchesOwner = !selectedOwner || test.owner?.id === selectedOwner;
+
+    return matchesSearch && matchesCategory && matchesOwner;
+  });
 
   return (
     <div className="p-4">
@@ -40,11 +69,49 @@ export default function TestList() {
         newButtonText="New Test"
       />
 
-      <SearchInput
-        value={searchQuery}
-        onChange={setSearchQuery}
-        placeholder="Search tests..."
-      />
+      <div className="mb-6">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tests..."
+              className="border p-2 rounded w-full"
+            />
+          </div>
+
+          <div className="flex-1">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="border p-2 rounded w-full"
+            >
+              <option value="">All Categories</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex-1">
+            <select
+              value={selectedOwner}
+              onChange={(e) => setSelectedOwner(Number(e.target.value))}
+              className="border p-2 rounded w-full"
+            >
+              <option value={0}>All Owners</option>
+              {owners.map((owner) => (
+                <option key={owner.id} value={owner.id}>
+                  {owner.firstName} {owner.lastName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
 
       <div className="grid gap-4">
         {filteredTests.map((test) => (
