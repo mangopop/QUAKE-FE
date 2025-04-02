@@ -1,38 +1,52 @@
-import { useState } from "react";
-import TestCard from "../components/TestCard";
+import { useState } from 'react';
+import { useTests } from '../services/tests.service';
+import Card from '../components/Card';
+import type { Test } from '../services/types';
 
 export default function SearchTests() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredTests, setFilteredTests] = useState([]);
-  const allTests = [
-    { id: 1, title: "Login Test", template: "Auth", sections: [{ name: "Enter Credentials", passed: true, notes: "Worked fine" }] },
-    { id: 2, title: "Payment Test", template: "Checkout", sections: [{ name: "Enter Card Details", passed: false, notes: "Payment failed" }] }
-  ];
+  const [searchTerm, setSearchTerm] = useState('');
+  const { data: tests, isLoading } = useTests();
 
-  const handleSearch = () => {
-    const results = allTests.filter(test =>
-      test.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredTests(results);
-  };
+  const filteredTests = tests?.data.filter(test =>
+    test.name.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Search Tests</h2>
-      <input
-        type="text"
-        placeholder="Search by title"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="border p-2 rounded w-full mb-2"
-      />
-      <button onClick={handleSearch} className="bg-blue-500 text-white p-2 rounded">Search</button>
-      <div className="mt-4">
-        {filteredTests.length > 0 ? (
-          filteredTests.map(test => <TestCard key={test.id} test={test} />)
-        ) : (
-          <p className="text-gray-500">No results found</p>
-        )}
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search tests..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTests.map(test => (
+          <Card
+            key={test.id}
+            title={test.name}
+            owner={test.owner}
+            metadata={[
+              { label: 'sections', value: test.sections?.length || 0 },
+              { label: 'categories', value: test.categories?.length || 0 }
+            ]}
+            notes={test.notes || undefined}
+            tags={test.categories?.map(category => ({
+              text: typeof category === 'string' ? category : category.name
+            }))}
+            sections={test.sections?.map(section => ({
+              name: section.name,
+              description: section.description
+            }))}
+          />
+        ))}
       </div>
     </div>
   );

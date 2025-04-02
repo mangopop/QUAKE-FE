@@ -11,7 +11,7 @@ interface CardProps {
   };
   onEdit?: () => void;
   onDelete?: () => void;
-  children: ReactNode;
+  children?: ReactNode;
   metadata?: {
     label: string;
     value: string | number;
@@ -21,6 +21,16 @@ interface CardProps {
     onClick: () => void;
     icon: ReactNode;
   };
+  notes?: string;
+  tags?: {
+    text: string;
+    className?: string;
+  }[];
+  sections?: {
+    name: string;
+    description?: string;
+    className?: string;
+  }[];
 }
 
 export default function Card({
@@ -30,7 +40,10 @@ export default function Card({
   onDelete,
   children,
   metadata,
-  actionButton
+  actionButton,
+  notes,
+  tags,
+  sections
 }: CardProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition-colors">
@@ -72,7 +85,38 @@ export default function Card({
         </div>
 
         <div className="space-y-3">
+          {notes && (
+            <p className="text-sm text-gray-500">{notes}</p>
+          )}
+          {tags && tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${tag.className || 'bg-blue-50 text-blue-700 border border-blue-100'}`}
+                >
+                  {tag.text}
+                </span>
+              ))}
+            </div>
+          )}
           {children}
+          {sections && sections.length > 0 && (
+            <div className="space-y-3">
+              {sections.map((section, index) => (
+                <div key={index} className={`bg-gray-50 rounded-lg p-3 ${section.className || ''}`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium text-gray-900">{section.name}</h4>
+                      {section.description && (
+                        <p className="text-sm text-gray-500">{section.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {actionButton && (

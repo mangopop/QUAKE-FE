@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useTests, useDeleteTest } from '../services/tests.service'
 import TestFilters from '../components/TestFilters'
-import TestCard from '../components/TestCard'
+import Card from '../components/Card'
 import NoResults from '../components/NoResults'
 import Pagination from '../components/Pagination'
 import CreateTestModal from '../components/CreateTestModal'
@@ -114,11 +114,24 @@ export default function TestList() {
           ) : (
             <div className="grid gap-4">
               {testsData?.data.map(test => (
-                <TestCard
+                <Card
                   key={test.id}
-                  test={test}
+                  title={test.name}
+                  owner={test.owner}
                   onEdit={() => handleEdit(test)}
                   onDelete={() => handleDelete(test.id)}
+                  metadata={[
+                    { label: 'sections', value: test.sections?.length || 0 },
+                    { label: 'categories', value: test.categories?.length || 0 }
+                  ]}
+                  notes={test.notes || undefined}
+                  tags={test.categories?.map(category => ({
+                    text: typeof category === 'string' ? category : category.name
+                  }))}
+                  sections={test.sections?.map(section => ({
+                    name: section.name,
+                    description: section.description
+                  }))}
                 />
               ))}
             </div>
