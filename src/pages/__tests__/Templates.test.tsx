@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Templates from '../Templates'
 import { useTemplates, useDeleteTemplate, useCreateTemplate } from '../../services/templates.service'
-import type { Template } from '../../services/types'
+import type { Template, Owner } from '../../services/types'
 import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query'
 
 // Mock the services
@@ -19,12 +19,22 @@ const mockTemplates: Template[] = [
   {
     id: 1,
     name: "Authentication Template",
-    owner: [],
+    owner: {
+      id: 1,
+      email: "test@example.com",
+      firstName: "John",
+      lastName: "Doe"
+    },
     tests: [
       {
         id: 1,
         name: "Login Test",
-        owner: [],
+        owner: {
+          id: 1,
+          email: "test@example.com",
+          firstName: "John",
+          lastName: "Doe"
+        },
         notes: "Test login functionality",
         sections: [
           { name: "Login Form", description: "Test login form validation" }
@@ -33,7 +43,12 @@ const mockTemplates: Template[] = [
       {
         id: 2,
         name: "Registration Test",
-        owner: [],
+        owner: {
+          id: 1,
+          email: "test@example.com",
+          firstName: "John",
+          lastName: "Doe"
+        },
         notes: "Test registration flow",
         sections: [
           { name: "Registration Form", description: "Test registration form" }
@@ -45,12 +60,22 @@ const mockTemplates: Template[] = [
   {
     id: 2,
     name: "Payment Template",
-    owner: [],
+    owner: {
+      id: 2,
+      email: "test2@example.com",
+      firstName: "Jane",
+      lastName: "Smith"
+    },
     tests: [
       {
         id: 3,
         name: "Payment Processing",
-        owner: [],
+        owner: {
+          id: 2,
+          email: "test2@example.com",
+          firstName: "Jane",
+          lastName: "Smith"
+        },
         notes: "Test payment processing",
         sections: [
           { name: "Card Payment", description: "Test card payment flow" }
@@ -294,5 +319,13 @@ describe('Templates Component', () => {
       const svg = button.querySelector('svg')
       expect(svg).toHaveClass('w-5', 'h-5')
     })
+  })
+
+  it('displays owner information for each template', () => {
+    renderTemplates()
+
+    // Check if owner information is displayed for each template
+    expect(screen.getByText('Owner: John Doe')).toBeInTheDocument()
+    expect(screen.getByText('Owner: Jane Smith')).toBeInTheDocument()
   })
 })

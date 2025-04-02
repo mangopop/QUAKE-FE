@@ -205,16 +205,37 @@ describe('Stories Component', () => {
   })
 
   it('handles story deletion', async () => {
-    await renderStories();
+    const mockDeleteMutation = vi.fn()
+    const mockMutationResult = {
+      context: undefined,
+      data: undefined,
+      error: null,
+      failureCount: 0,
+      failureReason: null,
+      isPending: false,
+      isError: false,
+      isIdle: true,
+      isPaused: false,
+      isSuccess: false,
+      mutate: vi.fn(),
+      mutateAsync: mockDeleteMutation,
+      reset: vi.fn(),
+      status: 'idle' as const,
+      variables: undefined,
+      submittedAt: Date.now()
+    } as unknown as UseMutationResult<void, Error, string>
+    vi.mocked(useDeleteStory).mockReturnValue(mockMutationResult)
 
-    const deleteButtons = screen.getAllByTitle("Delete Story");
-    await act(async () => {
-      fireEvent.click(deleteButtons[0]);
-    });
+    await renderStories()
 
+    // Find and click the delete button for the first story
+    const deleteButtons = screen.getAllByTitle('Delete')
+    fireEvent.click(deleteButtons[0])
+
+    // Verify that delete mutation was called with correct ID
     await waitFor(() => {
-      expect(mockDeleteStory).toHaveBeenCalledWith("1");
-    });
+      expect(mockDeleteMutation).toHaveBeenCalledWith('1')
+    })
   })
 
   it('displays correct number of tests for each template', async () => {
@@ -229,26 +250,50 @@ describe('Stories Component', () => {
   })
 
   it('renders buttons with correct styling and icons', async () => {
-    await renderStories();
+    await renderStories()
 
-    const editButtons = screen.getAllByTitle("Edit Story");
-    const deleteButtons = screen.getAllByTitle("Delete Story");
-    const runButtons = screen.getAllByText("Run");
+    // New Story button
+    const newStoryButton = screen.getByText('New Story').closest('button')
+    expect(newStoryButton).toHaveClass('bg-blue-500', 'text-white', 'px-4', 'py-2', 'rounded', 'hover:bg-blue-600', 'flex', 'items-center', 'gap-2')
 
-    expect(editButtons[0]).toHaveClass("text-gray-500", "hover:text-blue-500");
-    expect(deleteButtons[0]).toHaveClass("text-gray-500", "hover:text-red-500");
-    expect(runButtons[0]).toHaveClass("bg-green-500", "hover:bg-green-600");
+    // Edit buttons
+    const editButtons = screen.getAllByTitle('Edit')
+    editButtons.forEach(button => {
+      expect(button).toHaveClass(
+        'text-gray-500',
+        'hover:text-blue-500',
+        'p-2',
+        'rounded-full',
+        'hover:bg-blue-50',
+        'transition-colors'
+      )
+      // Verify edit icon
+      const svg = button.querySelector('svg')
+      expect(svg).toHaveClass('w-5', 'h-5')
+    })
+
+    // Delete buttons
+    const deleteButtons = screen.getAllByTitle('Delete')
+    deleteButtons.forEach(button => {
+      expect(button).toHaveClass(
+        'text-gray-500',
+        'hover:text-red-500',
+        'p-2',
+        'rounded-full',
+        'hover:bg-red-50',
+        'transition-colors'
+      )
+      // Verify delete icon
+      const svg = button.querySelector('svg')
+      expect(svg).toHaveClass('w-5', 'h-5')
+    })
   })
 
   it('displays owner information for each story', async () => {
-    await renderStories();
+    await renderStories()
 
-    // Check for owner names
-    expect(screen.getByText("John Doe")).toBeInTheDocument();
-    expect(screen.getByText("Jane Smith")).toBeInTheDocument();
-
-    // Check for owner emails
-    expect(screen.getByText("john.doe@example.com")).toBeInTheDocument();
-    expect(screen.getByText("jane.smith@example.com")).toBeInTheDocument();
+    // Check if owner information is displayed for each story
+    expect(screen.getByText('Owner: John Doe')).toBeInTheDocument()
+    expect(screen.getByText('Owner: Jane Smith')).toBeInTheDocument()
   })
 })

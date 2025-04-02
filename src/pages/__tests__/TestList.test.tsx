@@ -25,7 +25,12 @@ const mockTests: Test[] = [
       { name: "Error Messages", description: "Verify error messages" }
     ],
     categories: [],
-    owner: [],
+    owner: {
+      id: 1,
+      email: "test@example.com",
+      firstName: "John",
+      lastName: "Doe"
+    },
     templateId: "1"
   },
   {
@@ -37,7 +42,12 @@ const mockTests: Test[] = [
       { name: "Email Verification", description: "Test email verification" }
     ],
     categories: [],
-    owner: [],
+    owner: {
+      id: 2,
+      email: "test2@example.com",
+      firstName: "Jane",
+      lastName: "Smith"
+    },
     templateId: "2"
   }
 ]
@@ -188,6 +198,10 @@ describe('TestList Component', () => {
     // Check if notes are displayed
     expect(screen.getByText('Test login functionality')).toBeInTheDocument()
     expect(screen.getByText('Test user registration')).toBeInTheDocument()
+
+    // Check if owner information is displayed
+    expect(screen.getByText('Owner: John Doe')).toBeInTheDocument()
+    expect(screen.getByText('Owner: Jane Smith')).toBeInTheDocument()
   })
 
   it('filters tests based on search query', () => {
@@ -229,7 +243,7 @@ describe('TestList Component', () => {
     expect(newTestButton).toHaveClass('bg-blue-500', 'text-white', 'px-4', 'py-2', 'rounded', 'hover:bg-blue-600', 'flex', 'items-center', 'gap-2')
 
     // Edit buttons
-    const editButtons = screen.getAllByTitle('Edit Test')
+    const editButtons = screen.getAllByTitle('Edit')
     editButtons.forEach(button => {
       expect(button).toHaveClass(
         'text-gray-500',
@@ -245,7 +259,7 @@ describe('TestList Component', () => {
     })
 
     // Delete buttons
-    const deleteButtons = screen.getAllByTitle('Delete Test')
+    const deleteButtons = screen.getAllByTitle('Delete')
     deleteButtons.forEach(button => {
       expect(button).toHaveClass(
         'text-gray-500',
@@ -286,7 +300,7 @@ describe('TestList Component', () => {
     renderTestList()
 
     // Find and click the delete button for the first test
-    const deleteButtons = screen.getAllByTitle('Delete Test')
+    const deleteButtons = screen.getAllByTitle('Delete')
     fireEvent.click(deleteButtons[0])
 
     // Verify that delete mutation was called with correct ID

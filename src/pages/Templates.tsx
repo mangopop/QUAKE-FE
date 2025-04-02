@@ -63,6 +63,9 @@ export default function Templates() {
                   <div className="text-sm text-gray-600">
                     <span className="font-medium">{template.tests.length}</span> tests
                   </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    Owner: {template.owner.firstName} {template.owner.lastName}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button

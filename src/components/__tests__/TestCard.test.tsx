@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import TestCard from '../TestCard'
+import type { Owner } from '../../services/types'
 
 interface Section {
   title: string;
@@ -18,15 +19,25 @@ vi.mock('../Section', () => ({
 
 describe('TestCard', () => {
   const mockTest = {
-    title: 'Sample Test',
+    id: 1,
+    name: 'Sample Test',
     template: 'Basic Template',
     sections: [
-      { title: 'Section 1', content: 'Content 1' },
-      { title: 'Section 2', content: 'Content 2' },
+      { name: 'Section 1', description: 'Content 1' },
+      { name: 'Section 2', description: 'Content 2' },
     ],
+    notes: 'Test notes',
+    categories: [],
+    owner: {
+      id: 1,
+      email: "test@example.com",
+      firstName: "John",
+      lastName: "Doe"
+    } as Owner,
+    templateId: "1"
   }
 
-  it('renders the test title correctly', () => {
+  it('renders the test name correctly', () => {
     render(<TestCard test={mockTest} />)
     expect(screen.getByText('Sample Test')).toBeInTheDocument()
   })
@@ -49,5 +60,15 @@ describe('TestCard', () => {
     }
     render(<TestCard test={testWithoutTemplate} />)
     expect(screen.getByText('Template: None')).toBeInTheDocument()
+  })
+
+  it('displays owner information', () => {
+    render(<TestCard test={mockTest} />)
+    expect(screen.getByText('Owner: John Doe')).toBeInTheDocument()
+  })
+
+  it('displays notes when provided', () => {
+    render(<TestCard test={mockTest} />)
+    expect(screen.getByText('Test notes')).toBeInTheDocument()
   })
 })
