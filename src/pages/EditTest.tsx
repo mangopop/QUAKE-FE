@@ -3,7 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTest, useUpdateTest } from "../services/tests.service";
 import { useTemplates } from "../services/templates.service";
 import type { Test, CreateTestRequest } from "../services/types";
-import Section from "../components/Section";
+import FormInput from "../components/common/FormInput";
+import Button from "../components/common/Button";
+import SectionForm, { Section } from "../components/common/SectionForm";
 
 export default function EditTest() {
   const { testId } = useParams<{ testId: string }>();
@@ -47,11 +49,11 @@ export default function EditTest() {
     }));
   };
 
-  const updateSection = (index: number, key: 'name' | 'description', value: string) => {
+  const updateSection = (index: number, field: keyof Section, value: string) => {
     setFormData(prev => ({
       ...prev,
       sections: prev.sections.map((section, i) =>
-        i === index ? { ...section, [key]: value } : section
+        i === index ? { ...section, [field]: value } : section
       )
     }));
   };
@@ -74,19 +76,14 @@ export default function EditTest() {
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">Edit Test</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Test Name
-          </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            className="border p-2 rounded w-full"
-            required
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <FormInput
+          label="Test Name"
+          value={formData.name}
+          onChange={(value) => setFormData(prev => ({ ...prev, name: value }))}
+          placeholder="Enter test name"
+          required
+        />
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -106,68 +103,26 @@ export default function EditTest() {
           </select>
         </div>
 
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Sections
-            </label>
-            <button
-              type="button"
-              onClick={addSection}
-              className="text-sm text-blue-500 hover:text-blue-600"
-            >
-              + Add Section
-            </button>
-          </div>
-          <div className="space-y-4">
-            {formData.sections.map((section, index) => (
-              <div key={index} className="border p-4 rounded">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-medium">Section {index + 1}</h4>
-                  <button
-                    type="button"
-                    onClick={() => removeSection(index)}
-                    className="text-red-500 hover:text-red-600"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="Section Name"
-                    value={section.name}
-                    onChange={(e) => updateSection(index, 'name', e.target.value)}
-                    className="border p-2 rounded w-full"
-                  />
-                  <textarea
-                    placeholder="Section Description"
-                    value={section.description}
-                    onChange={(e) => updateSection(index, 'description', e.target.value)}
-                    className="border p-2 rounded w-full"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <SectionForm
+          sections={formData.sections}
+          onAddSection={addSection}
+          onRemoveSection={removeSection}
+          onUpdateSection={updateSection}
+        />
 
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
+        <div className="flex justify-end gap-4">
+          <Button
             onClick={() => navigate("/tests")}
-            className="px-4 py-2 text-gray-700 hover:text-gray-900"
+            variant="secondary"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={updateTest.isPending}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
           >
             {updateTest.isPending ? 'Saving...' : 'Save Changes'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
