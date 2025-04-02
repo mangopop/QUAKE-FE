@@ -87,7 +87,7 @@ export const useUpdateTest = () => {
     mutationFn: ({ id, data }: { id: number; data: Partial<Test> }) =>
       testsService.update(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['tests'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tests() });
       queryClient.invalidateQueries({ queryKey: queryKeys.test(String(id)) });
     },
   });

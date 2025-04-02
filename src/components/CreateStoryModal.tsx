@@ -60,18 +60,18 @@ export default function CreateStoryModal({
           maxHeight="48"
         />
 
-        <div className="flex justify-end gap-4">
+        <div className="flex gap-4">
+          <Button
+            type="submit"
+            disabled={isSubmitting || !newStory.name.trim()}
+          >
+            {isSubmitting ? 'Creating...' : 'Create Story'}
+          </Button>
           <Button
             onClick={onClose}
             variant="secondary"
           >
             Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Creating...' : 'Create Story'}
           </Button>
         </div>
       </form>

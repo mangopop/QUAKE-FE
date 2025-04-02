@@ -1,22 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTests, useCreateTest, useDeleteTest } from "../services/tests.service";
-import type { Test, CreateTestRequest } from "../services/types";
+import { useTests, useDeleteTest } from "../services/tests.service";
 
 export default function Tests() {
   const [searchQuery, setSearchQuery] = useState("");
   const { data: testsData, isLoading } = useTests();
-  const createTest = useCreateTest();
   const deleteTest = useDeleteTest();
   const navigate = useNavigate();
 
-  const handleCreateTest = async (test: CreateTestRequest) => {
-    try {
-      await createTest.mutateAsync(test);
-    } catch (error) {
-      console.error('Failed to create test:', error);
-    }
-  };
 
   const handleDeleteTest = async (id: number) => {
     try {
