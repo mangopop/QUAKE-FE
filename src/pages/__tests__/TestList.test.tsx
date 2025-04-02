@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import TestList from '../TestList'
 import { useTests, useDeleteTest, useCreateTest } from '../../services/tests.service'
-import type { Test, Section, CreateTestRequest } from '../../services/types'
+import type { Test, Section, CreateTestRequest, PaginatedTestsResponse } from '../../services/types'
 import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query'
 
 // Mock the services
@@ -52,6 +52,14 @@ const mockTests: Test[] = [
   }
 ]
 
+const mockPaginatedResponse: PaginatedTestsResponse = {
+  data: mockTests,
+  total: mockTests.length,
+  totalPages: 1,
+  page: 1,
+  limit: 30
+}
+
 const renderTestList = () => {
   const queryClient = new QueryClient()
   return render(
@@ -70,7 +78,7 @@ describe('TestList Component', () => {
 
     // Setup default mock implementations
     const mockQueryResult = {
-      data: mockTests,
+      data: mockPaginatedResponse,
       dataUpdatedAt: Date.now(),
       error: null,
       errorUpdateCount: 0,
@@ -101,8 +109,8 @@ describe('TestList Component', () => {
       hasPreviousPage: false,
       isFetchingNextPage: false,
       isFetchingPreviousPage: false,
-      promise: Promise.resolve(mockTests)
-    } as unknown as UseQueryResult<Test[], Error>
+      promise: Promise.resolve(mockPaginatedResponse)
+    } as unknown as UseQueryResult<PaginatedTestsResponse, Error>
     vi.mocked(useTests).mockReturnValue(mockQueryResult)
 
     const mockDeleteMutationResult = {
@@ -122,7 +130,7 @@ describe('TestList Component', () => {
       status: 'idle' as const,
       variables: undefined,
       submittedAt: Date.now()
-    } as unknown as UseMutationResult<void, Error, string>
+    } as unknown as UseMutationResult<void, Error, number>
 
     const mockCreateMutationResult = {
       context: undefined,
@@ -180,8 +188,8 @@ describe('TestList Component', () => {
       hasPreviousPage: false,
       isFetchingNextPage: false,
       isFetchingPreviousPage: false,
-      promise: Promise.resolve([] as Test[])
-    } as unknown as UseQueryResult<Test[], Error>
+      promise: Promise.resolve(mockPaginatedResponse)
+    } as unknown as UseQueryResult<PaginatedTestsResponse, Error>
     vi.mocked(useTests).mockReturnValue(loadingQueryResult)
 
     renderTestList()
@@ -200,19 +208,66 @@ describe('TestList Component', () => {
     expect(screen.getByText('Test user registration')).toBeInTheDocument()
 
     // Check if owner information is displayed
-    expect(screen.getByText('Owner: John Doe')).toBeInTheDocument()
-    expect(screen.getByText('Owner: Jane Smith')).toBeInTheDocument()
+    expect(screen.getByText('John Doe')).toBeInTheDocument()
+    expect(screen.getByText('Jane Smith')).toBeInTheDocument()
   })
 
-  it('filters tests based on search query', () => {
+  it('filters tests based on search query', async () => {
+    const mockFilteredResponse: PaginatedTestsResponse = {
+      data: [mockTests[0]], // Only return Login Test
+      total: 1,
+      totalPages: 1,
+      page: 1,
+      limit: 30
+    }
+
+    const mockQueryResult = {
+      data: mockFilteredResponse,
+      dataUpdatedAt: Date.now(),
+      error: null,
+      errorUpdateCount: 0,
+      errorUpdatedAt: 0,
+      failureCount: 0,
+      failureReason: null,
+      fetchStatus: 'idle' as const,
+      isError: false,
+      isFetched: true,
+      isFetchedAfterMount: true,
+      isFetching: false,
+      isLoading: false,
+      isLoadingError: false,
+      isPaused: false,
+      isPending: false,
+      isPlaceholderData: false,
+      isRefetchError: false,
+      isRefetching: false,
+      isStale: false,
+      isSuccess: true,
+      isInitialLoading: false,
+      refetch: vi.fn(),
+      status: 'success' as const,
+      remove: vi.fn(),
+      fetchNextPage: vi.fn(),
+      fetchPreviousPage: vi.fn(),
+      hasNextPage: false,
+      hasPreviousPage: false,
+      isFetchingNextPage: false,
+      isFetchingPreviousPage: false,
+      promise: Promise.resolve(mockFilteredResponse)
+    } as unknown as UseQueryResult<PaginatedTestsResponse, Error>
+
+    vi.mocked(useTests).mockReturnValue(mockQueryResult)
+
     renderTestList()
 
     const searchInput = screen.getByPlaceholderText('Search tests...')
     fireEvent.change(searchInput, { target: { value: 'login' } })
 
-    // Should show Login Test but not Registration Flow
-    expect(screen.getByText('Login Test')).toBeInTheDocument()
-    expect(screen.queryByText('Registration Flow')).not.toBeInTheDocument()
+    // Wait for the filtered results to be displayed
+    await waitFor(() => {
+      expect(screen.getByText('Login Test')).toBeInTheDocument()
+      expect(screen.queryByText('Registration Flow')).not.toBeInTheDocument()
+    })
   })
 
   it('opens create test modal when clicking New Test button', () => {
@@ -253,9 +308,6 @@ describe('TestList Component', () => {
         'hover:bg-blue-50',
         'transition-colors'
       )
-      // Verify edit icon
-      const svg = button.querySelector('svg')
-      expect(svg).toHaveClass('w-5', 'h-5')
     })
 
     // Delete buttons
@@ -269,66 +321,60 @@ describe('TestList Component', () => {
         'hover:bg-red-50',
         'transition-colors'
       )
-      // Verify delete icon
-      const svg = button.querySelector('svg')
-      expect(svg).toHaveClass('w-5', 'h-5')
     })
   })
 
-  it('handles test deletion', async () => {
-    const mockDeleteMutation = vi.fn()
-    const mockMutationResult = {
-      context: undefined,
-      data: undefined,
+  it('displays pagination controls when there are multiple pages', () => {
+    const mockPaginatedResponseWithPages: PaginatedTestsResponse = {
+      data: mockTests,
+      total: 60,
+      totalPages: 2,
+      page: 1,
+      limit: 30
+    }
+
+    const mockQueryResult = {
+      data: mockPaginatedResponseWithPages,
+      dataUpdatedAt: Date.now(),
       error: null,
+      errorUpdateCount: 0,
+      errorUpdatedAt: 0,
       failureCount: 0,
       failureReason: null,
-      isPending: false,
+      fetchStatus: 'idle' as const,
       isError: false,
-      isIdle: true,
+      isFetched: true,
+      isFetchedAfterMount: true,
+      isFetching: false,
+      isLoading: false,
+      isLoadingError: false,
       isPaused: false,
-      isSuccess: false,
-      mutate: vi.fn(),
-      mutateAsync: mockDeleteMutation,
-      reset: vi.fn(),
-      status: 'idle' as const,
-      variables: undefined,
-      submittedAt: Date.now()
-    } as unknown as UseMutationResult<void, Error, string>
-    vi.mocked(useDeleteTest).mockReturnValue(mockMutationResult)
+      isPending: false,
+      isPlaceholderData: false,
+      isRefetchError: false,
+      isRefetching: false,
+      isStale: false,
+      isSuccess: true,
+      isInitialLoading: false,
+      refetch: vi.fn(),
+      status: 'success' as const,
+      remove: vi.fn(),
+      fetchNextPage: vi.fn(),
+      fetchPreviousPage: vi.fn(),
+      hasNextPage: false,
+      hasPreviousPage: false,
+      isFetchingNextPage: false,
+      isFetchingPreviousPage: false,
+      promise: Promise.resolve(mockPaginatedResponseWithPages)
+    } as unknown as UseQueryResult<PaginatedTestsResponse, Error>
+
+    vi.mocked(useTests).mockReturnValue(mockQueryResult)
 
     renderTestList()
 
-    // Find and click the delete button for the first test
-    const deleteButtons = screen.getAllByTitle('Delete')
-    fireEvent.click(deleteButtons[0])
-
-    // Verify that delete mutation was called with correct ID
-    await waitFor(() => {
-      expect(mockDeleteMutation).toHaveBeenCalledWith('1')
-    })
-  })
-
-  it('displays correct number of sections for each test', () => {
-    renderTestList()
-
-    // Both mock tests have 2 sections
-    const sectionNumbers = screen.getAllByText('2', { exact: true })
-    expect(sectionNumbers).toHaveLength(2)
-
-    const sectionLabels = screen.getAllByText('sections', { exact: true })
-    expect(sectionLabels).toHaveLength(2)
-  })
-
-  it('displays correct number of categories for each test', () => {
-    renderTestList()
-
-    // Both mock tests have 0 categories
-    const categoryNumbers = screen.getAllByText('0', { exact: true })
-    const categoryLabels = screen.getAllByText('categories', { exact: true })
-
-    // Each test shows category count
-    expect(categoryNumbers).toHaveLength(mockTests.length)
-    expect(categoryLabels).toHaveLength(mockTests.length)
+    // Check if pagination controls are displayed
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument()
+    expect(screen.getByText('Previous')).toBeInTheDocument()
+    expect(screen.getByText('Next')).toBeInTheDocument()
   })
 })

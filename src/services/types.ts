@@ -19,7 +19,7 @@ export interface ApiError {
 
 // API Resource Types
 export interface Category {
-  id: string;
+  id: number;
   name: string;
   description?: string;
   createdAt: string;

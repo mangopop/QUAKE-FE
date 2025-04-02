@@ -5,10 +5,11 @@ import type { ApiResponse, Test, CreateTestRequest, PaginatedTestsResponse } fro
 const ENDPOINTS = {
   tests: '/api/tests',
   test: (id: string) => `/api/tests/${id}`,
+  search: '/api/tests/search',
 } as const;
 
 export const queryKeys = {
-  tests: (params?: { page?: number; limit?: number; search?: string; category?: string; ownerId?: number }) =>
+  tests: (params?: { page?: number; limit?: number; q?: string; category?: string; ownerId?: number }) =>
     ['tests', params],
   test: (id: string) => ['test', id],
 } as const;
@@ -16,19 +17,23 @@ export const queryKeys = {
 interface GetTestsParams {
   page?: number;
   limit?: number;
-  search?: string;
+  q?: string;
   category?: string;
   ownerId?: number;
 }
 
 export const testsService = {
   getAll: async (params?: GetTestsParams) => {
+    if (params?.q || params?.category || params?.ownerId) {
+      const response = await apiClient.get<PaginatedTestsResponse>(ENDPOINTS.search, { params });
+      return response.data;
+    }
     const response = await apiClient.get<PaginatedTestsResponse>(ENDPOINTS.tests, { params });
     return response.data;
   },
 
-  getById: async (id: string) => {
-    const response = await apiClient.get<Test>(ENDPOINTS.test(id));
+  getById: async (id: number) => {
+    const response = await apiClient.get<Test>(ENDPOINTS.test(String(id)));
     return response.data;
   },
 
@@ -37,13 +42,13 @@ export const testsService = {
     return response.data;
   },
 
-  update: async (id: string, data: Partial<Test>) => {
-    const response = await apiClient.put<Test>(ENDPOINTS.test(id), data);
+  update: async (id: number, data: Partial<Test>) => {
+    const response = await apiClient.put<Test>(ENDPOINTS.test(String(id)), data);
     return response.data;
   },
 
-  delete: async (id: string) => {
-    const response = await apiClient.delete<void>(ENDPOINTS.test(id));
+  delete: async (id: number) => {
+    const response = await apiClient.delete<void>(ENDPOINTS.test(String(id)));
     return response.data;
   },
 };
@@ -58,7 +63,7 @@ export const useTests = (params?: GetTestsParams) => {
 export const useTest = (id: string) => {
   return useQuery({
     queryKey: queryKeys.test(id),
-    queryFn: () => testsService.getById(id),
+    queryFn: () => testsService.getById(Number(id)),
     enabled: !!id,
   });
 };
@@ -78,11 +83,11 @@ export const useUpdateTest = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Test> }) =>
+    mutationFn: ({ id, data }: { id: number; data: Partial<Test> }) =>
       testsService.update(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tests() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.test(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.test(String(id)) });
     },
   });
 };
@@ -91,10 +96,10 @@ export const useDeleteTest = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: testsService.delete,
+    mutationFn: (id: number) => testsService.delete(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tests() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.test(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.test(String(id)) });
     },
   });
 };

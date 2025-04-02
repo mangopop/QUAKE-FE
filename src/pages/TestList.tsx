@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTests, useDeleteTest } from "../services/tests.service";
-import type { Test, Owner } from "../services/types";
+import type { Test, Owner, Category } from "../services/types";
 import CreateTestModal from "../components/CreateTestModal";
 import OwnerInfo from "../components/OwnerInfo";
 import PageHeader from "../components/PageHeader";
@@ -9,7 +9,7 @@ import SearchInput from "../components/SearchInput";
 import ActionButtons from "../components/ActionButtons";
 import Card from "../components/Card";
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 30;
 
 export default function TestList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,9 +19,9 @@ export default function TestList() {
   const { data: testsData, isLoading } = useTests({
     page: currentPage,
     limit: ITEMS_PER_PAGE,
-    search: searchQuery,
-    category: selectedCategory || undefined,
-    ownerId: selectedOwner || undefined
+    ...(searchQuery ? { q: searchQuery } : {}),
+    ...(selectedCategory ? { category: selectedCategory } : {}),
+    ...(selectedOwner ? { ownerId: selectedOwner } : {})
   });
   const deleteTest = useDeleteTest();
   const navigate = useNavigate();
@@ -49,7 +49,7 @@ export default function TestList() {
 
   const handleDeleteTest = async (id: number) => {
     try {
-      await deleteTest.mutateAsync(id.toString());
+      await deleteTest.mutateAsync(id);
     } catch (error) {
       console.error('Failed to delete test:', error);
     }
