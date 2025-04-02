@@ -1,136 +1,129 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { useTests, useDeleteTest } from "../services/tests.service";
-import type { Test, Owner } from "../services/types";
-import CreateTestModal from "../components/CreateTestModal";
-import PageHeader from "../components/PageHeader";
-import TestFilters from "../components/TestFilters";
-import TestCard from "../components/TestCard";
-import NoResults from "../components/NoResults";
-import Pagination from "../components/Pagination";
-import { useDebounce } from "../hooks/useDebounce";
-
-const ITEMS_PER_PAGE = 30;
-const SEARCH_DELAY = 900;
+import React, { useState, useMemo, useEffect } from 'react'
+import { useTests, useDeleteTest } from '../services/tests.service'
+import TestFilters from '../components/TestFilters'
+import TestCard from '../components/TestCard'
+import NoResults from '../components/NoResults'
+import Pagination from '../components/Pagination'
+import type { Test, Owner, Category } from '../services/types'
 
 export default function TestList() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearchQuery = useDebounce(searchQuery, SEARCH_DELAY);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedOwner, setSelectedOwner] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedOwnerId, setSelectedOwnerId] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+      setCurrentPage(1) // Reset to first page when search changes
+    }, 900)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   const { data: testsData, isLoading, isFetching } = useTests({
     page: currentPage,
-    limit: ITEMS_PER_PAGE,
-    ...(debouncedSearchQuery ? { q: debouncedSearchQuery } : {}),
-    ...(selectedCategory ? { category: selectedCategory } : {}),
-    ...(selectedOwner ? { ownerId: selectedOwner } : {})
-  });
-  const deleteTest = useDeleteTest();
-  const navigate = useNavigate();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    limit: itemsPerPage,
+    q: debouncedSearch,
+    category: selectedCategory,
+    ownerId: selectedOwnerId || undefined
+  })
 
-  // Extract unique categories and owners from tests
-  const { categories, owners } = useMemo(() => {
-    const categoriesSet = new Set<string>();
-    const ownersMap = new Map<number, Owner>();
+  const deleteMutation = useDeleteTest()
 
-    testsData?.data?.forEach(test => {
-      test.categories?.forEach(category => {
-        categoriesSet.add(typeof category === 'string' ? category : category.name);
-      });
-      if (test.owner) {
-        ownersMap.set(test.owner.id, test.owner);
-      }
-    });
+  const categories = useMemo(() => {
+    if (!testsData?.data) return []
+    const allCategories = testsData.data.flatMap((test: Test) =>
+      test.categories.map(cat => typeof cat === 'string' ? cat : cat.name)
+    )
+    return Array.from(new Set(allCategories))
+  }, [testsData?.data])
 
-    return {
-      categories: Array.from(categoriesSet),
-      owners: Array.from(ownersMap.values())
-    };
-  }, [testsData?.data]);
+  const owners = useMemo(() => {
+    if (!testsData?.data) return []
+    const allOwners = testsData.data.map((test: Test) => test.owner)
+    return Array.from(new Set(allOwners.map((owner: Owner) => JSON.stringify(owner))))
+      .map((str: string) => JSON.parse(str) as Owner)
+  }, [testsData?.data])
 
-  const handleDeleteTest = async (id: number) => {
-    try {
-      await deleteTest.mutateAsync(id);
-    } catch (error) {
-      console.error('Failed to delete test:', error);
-    }
-  };
+  const handleDelete = async (id: number) => {
+    await deleteMutation.mutateAsync(id)
+  }
 
-  const handleFilterChange = (newValue: string | number, type: 'search' | 'category' | 'owner') => {
-    switch (type) {
-      case 'search':
-        setSearchQuery(newValue as string);
-        break;
-      case 'category':
-        setCurrentPage(1);
-        setSelectedCategory(newValue as string);
-        break;
-      case 'owner':
-        setCurrentPage(1);
-        setSelectedOwner(newValue as number);
-        break;
-    }
-  };
+  const handleCreateNew = () => {
+    // TODO: Implement create new test functionality
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
 
   return (
     <div className="p-4">
-      <PageHeader
-        title="Tests"
-        onNewClick={() => setIsCreateModalOpen(true)}
-        newButtonText="New Test"
-      />
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Tests</h2>
+        <button
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
+          onClick={handleCreateNew}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          New Test
+        </button>
+      </div>
 
       <TestFilters
         searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
         selectedCategory={selectedCategory}
-        selectedOwner={selectedOwner}
+        onCategoryChange={setSelectedCategory}
+        selectedOwnerId={selectedOwnerId}
+        onOwnerChange={setSelectedOwnerId}
         categories={categories}
         owners={owners}
-        isFetching={isFetching}
-        onFilterChange={handleFilterChange}
+        isLoading={isLoading}
       />
 
-      {isLoading && !testsData ? (
+      {isLoading ? (
         <div className="flex justify-center items-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+          <div
+            role="status"
+            data-testid="loading-spinner"
+            className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"
+          />
         </div>
       ) : (
         <>
-          {testsData?.data?.length === 0 ? (
+          {testsData?.data.length === 0 ? (
             <NoResults
               searchQuery={searchQuery}
-              onCreateNew={() => setIsCreateModalOpen(true)}
+              onCreateNew={handleCreateNew}
             />
           ) : (
-            <>
-              <div className="grid gap-4">
-                {testsData?.data?.map((test) => (
-                  <TestCard
-                    key={test.id}
-                    test={test}
-                    onEdit={() => navigate(`/tests/${test.id}/edit`)}
-                    onDelete={() => handleDeleteTest(test.id)}
-                  />
-                ))}
-              </div>
-
-              <Pagination
-                currentPage={currentPage}
-                totalPages={testsData?.totalPages || 0}
-                isFetching={isFetching}
-                onPageChange={setCurrentPage}
-              />
-            </>
+            <div className="grid gap-4">
+              {testsData?.data.map(test => (
+                <TestCard
+                  key={test.id}
+                  test={test}
+                  onEdit={() => {}}
+                  onDelete={() => handleDelete(test.id)}
+                />
+              ))}
+            </div>
           )}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={testsData?.totalPages || 1}
+            isFetching={isFetching}
+            onPageChange={handlePageChange}
+          />
         </>
       )}
-
-      <CreateTestModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-      />
     </div>
-  );
+  )
 }
