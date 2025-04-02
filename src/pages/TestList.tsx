@@ -56,10 +56,22 @@ export default function TestList() {
                   <span className="text-sm text-gray-600">
                     <span className="font-medium">{test.sections?.length || 0}</span> sections
                   </span>
+                  <span className="text-sm text-gray-600">
+                    <span className="font-medium">{test.categories?.length || 0}</span> categories
+                  </span>
                   {test.owner && <OwnerInfo owner={test.owner} />}
                 </div>
                 {test.notes && (
                   <p className="text-sm text-gray-500">{test.notes}</p>
+                )}
+                {test.categories && test.categories.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {test.categories.map((category, index) => (
+                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                        {typeof category === 'string' ? category : category.name}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
               <ActionButtons
@@ -75,11 +87,6 @@ export default function TestList() {
                     <div>
                       <h4 className="font-medium text-gray-900">{section.name}</h4>
                       <p className="text-sm text-gray-500">{section.description}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">{test.categories.length}</span> categories
-                      </div>
                     </div>
                   </div>
                 </div>

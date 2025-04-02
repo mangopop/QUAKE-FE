@@ -323,12 +323,12 @@ describe('TestList Component', () => {
   it('displays correct number of categories for each test', () => {
     renderTestList()
 
-    // Both mock tests have 0 categories for each section
+    // Both mock tests have 0 categories
     const categoryNumbers = screen.getAllByText('0', { exact: true })
     const categoryLabels = screen.getAllByText('categories', { exact: true })
 
-    // Each test has 2 sections, and each section shows category count
-    expect(categoryNumbers).toHaveLength(mockTests.length * mockTests[0].sections.length)
-    expect(categoryLabels).toHaveLength(mockTests.length * mockTests[0].sections.length)
+    // Each test shows category count
+    expect(categoryNumbers).toHaveLength(mockTests.length)
+    expect(categoryLabels).toHaveLength(mockTests.length)
   })
 })

@@ -27,7 +27,7 @@ describe('TestCard', () => {
       { name: 'Section 2', description: 'Content 2' },
     ],
     notes: 'Test notes',
-    categories: [],
+    categories: ['UI', 'Authentication'],
     owner: {
       id: 1,
       email: "test@example.com",
@@ -70,5 +70,11 @@ describe('TestCard', () => {
   it('displays notes when provided', () => {
     render(<TestCard test={mockTest} />)
     expect(screen.getByText('Test notes')).toBeInTheDocument()
+  })
+
+  it('displays categories when provided', () => {
+    render(<TestCard test={mockTest} />)
+    expect(screen.getByText('UI')).toBeInTheDocument()
+    expect(screen.getByText('Authentication')).toBeInTheDocument()
   })
 })

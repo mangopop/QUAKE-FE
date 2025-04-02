@@ -61,11 +61,11 @@ export interface Section {
 export interface Template {
   id: number;
   name: string;
-  owner: Owner;
+  owner: any[];
   tests: {
     id: number;
     name: string;
-    owner: Owner;
+    owner: any[];
     notes: string | null;
     sections: Section[];
   }[];
@@ -79,7 +79,6 @@ export interface Test {
   notes: string | null;
   categories: any[];
   templateId?: string;
-  template?: string;
   sections: Section[];
 }
 

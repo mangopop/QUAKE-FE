@@ -27,6 +27,15 @@ export default function TestCard({ test }: TestCardProps) {
         {test.notes && (
           <p className="mt-1">{test.notes}</p>
         )}
+        {test.categories && test.categories.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-2">
+            {test.categories.map((category, index) => (
+              <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                {category}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-2">
