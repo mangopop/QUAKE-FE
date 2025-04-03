@@ -47,19 +47,14 @@ export default function Card({
   sections
 }: CardProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition-colors">
-      <div className="p-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition-colors flex flex-col h-full">
+      <div className="p-4 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-3">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">{title}</h3>
-            {metadata?.map((item, index) => (
-              <div key={index} className="text-sm text-gray-600">
-                <span className={`font-medium ${item.className || ''}`}>{item.value}</span> {item.label}
-              </div>
-            ))}
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1 break-words">{title}</h3>
             {owner && <OwnerInfo owner={owner} />}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0">
             {onEdit && (
               <button
                 onClick={onEdit}
@@ -85,7 +80,15 @@ export default function Card({
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="flex flex-wrap gap-4 mb-3">
+          {metadata?.map((item, index) => (
+            <div key={index} className="text-sm text-gray-600">
+              <span className={`font-medium ${item.className || ''}`}>{item.value}</span> {item.label}
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3 flex-1">
           {notes && (
             <p className="text-sm text-gray-500">{notes}</p>
           )}
@@ -103,7 +106,7 @@ export default function Card({
           )}
           {children}
           {sections && sections.length > 0 && (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {sections.map((section, index) => (
                 <div key={index} className={`bg-gray-50 rounded-lg p-3 ${section.className || ''}`}>
                   <div className="flex justify-between items-center">

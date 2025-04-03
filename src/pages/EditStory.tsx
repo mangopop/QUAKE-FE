@@ -11,6 +11,7 @@ export default function EditStory() {
   const updateStory = useUpdateStory();
   const [editedStory, setEditedStory] = useState<Story | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [templateTestCounts, setTemplateTestCounts] = useState<Record<number, number>>({});
 
   // Initialize editedStory when story data is loaded
   useEffect(() => {
@@ -18,6 +19,17 @@ export default function EditStory() {
       setEditedStory(story);
     }
   }, [story]);
+
+  // Update test counts when templates are loaded
+  useEffect(() => {
+    if (availableTemplates) {
+      const counts: Record<number, number> = {};
+      availableTemplates.forEach(template => {
+        counts[template.id] = template.tests?.length || 0;
+      });
+      setTemplateTestCounts(counts);
+    }
+  }, [availableTemplates]);
 
   if (isLoadingStory || isLoadingTemplates) {
     return <div className="p-4">Loading story details...</div>;
@@ -147,7 +159,7 @@ export default function EditStory() {
                     <div>
                       <h4 className="font-medium">{template.name}</h4>
                       <p className="text-sm text-gray-600">
-                        {template.tests?.length || 0} tests
+                        <span className="font-medium">{templateTestCounts[template.id] || 0}</span> tests
                       </p>
                     </div>
                     <button
@@ -163,32 +175,6 @@ export default function EditStory() {
                 ))}
                 {(!editedStory.templates || editedStory.templates.length === 0) && (
                   <p className="text-sm text-gray-500 italic">No templates associated with this story</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium mb-2">Test Results</h3>
-              <div className="space-y-2">
-                {editedStory.testResults?.map(result => (
-                  <div key={result.id} className="bg-gray-50 p-3 rounded">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{result.test.name}</h4>
-                        <p className="text-sm text-gray-600">
-                          Status: {result.status === "passed" ? 'Passed' : result.status === "failed" ? 'Failed' : 'Not Tested'}
-                        </p>
-                        {result.notes && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            Notes: {result.notes}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {(!editedStory.testResults || editedStory.testResults.length === 0) && (
-                  <p className="text-sm text-gray-500 italic">No test results yet</p>
                 )}
               </div>
             </div>

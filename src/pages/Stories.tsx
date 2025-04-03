@@ -100,7 +100,7 @@ export default function Stories() {
         isSubmitting={createStory.isPending}
       />
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredStories.map((story) => {
           const results = getTestResults(story);
           return (
@@ -152,7 +152,7 @@ export default function Stories() {
               {story.templates.map((template) => (
                 <div key={template.id} className="bg-gray-50 rounded-lg p-3">
                   <div className="flex justify-between items-center">
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-medium text-gray-900">{template.name}</h4>
                     </div>
                     <div className="text-sm text-gray-600">
