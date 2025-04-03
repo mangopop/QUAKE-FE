@@ -11,7 +11,12 @@ interface TestNotes {
   id: number;
   note: string;
   createdAt: string;
-  code?: string;
+  createdBy: {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
 }
 
 interface TestResult {
@@ -359,7 +364,7 @@ export default function RunStory() {
                                 return (
                                   <div key={historyItem.id} className="bg-gray-50 rounded p-2 text-sm">
                                     <div className="text-gray-500 text-xs mb-1">
-                                      {new Date(historyItem.createdAt).toLocaleString()}
+                                      {new Date(historyItem.createdAt).toLocaleString()} by {historyItem.createdBy.firstName} {historyItem.createdBy.lastName}
                                     </div>
                                     <div className="whitespace-pre-wrap">
                                       {formatNote(historyItem.note, noteId)}
