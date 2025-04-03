@@ -2,8 +2,15 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStory, useUpdateStory, useTestsByTemplate, useUpdateTestResult, storiesService } from "../services/stories.service";
 import type { Story, Template, Test } from "../services/types";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 type TestStatus = "not_tested" | "passed" | "failed";
+
+interface TestNotes {
+  notes: string;
+  code?: string;
+}
 
 export default function RunStory() {
   const { storyId } = useParams<{ storyId: string }>();
@@ -11,7 +18,7 @@ export default function RunStory() {
   const { data: story, isLoading: isLoadingStory } = useStory(storyId || "");
   const updateTestResult = useUpdateTestResult();
   const [testStatuses, setTestStatuses] = useState<Record<number, TestStatus>>({});
-  const [notes, setNotes] = useState<Record<number, string>>({});
+  const [notes, setNotes] = useState<Record<number, TestNotes>>({});
   const [uniqueTests, setUniqueTests] = useState<Test[]>([]);
   const [totalTests, setTotalTests] = useState(0);
   const [expandedTestId, setExpandedTestId] = useState<number | null>(null);
@@ -52,12 +59,12 @@ export default function RunStory() {
   useEffect(() => {
     if (story?.testResults) {
       const initialStatuses: Record<number, TestStatus> = {};
-      const initialNotes: Record<number, string> = {};
+      const initialNotes: Record<number, TestNotes> = {};
 
       story.testResults.forEach(result => {
         initialStatuses[result.test.id] = result.status as TestStatus || "not_tested";
         if (result.notes) {
-          initialNotes[result.test.id] = result.notes;
+          initialNotes[result.test.id] = { notes: result.notes };
         }
       });
 
@@ -83,7 +90,7 @@ export default function RunStory() {
         testId,
         data: {
           status,
-          notes: notes[testId] || null
+          notes: notes[testId]?.notes || null
         }
       });
     } catch (error) {
@@ -91,7 +98,7 @@ export default function RunStory() {
     }
   };
 
-  const handleNotesChange = (testId: number, value: string) => {
+  const handleNotesChange = (testId: number, value: TestNotes) => {
     setNotes(prev => ({
       ...prev,
       [testId]: value
@@ -108,7 +115,7 @@ export default function RunStory() {
         testId,
         data: {
           status: testStatuses[testId] || "not_tested",
-          notes: notes[testId] || null
+          notes: notes[testId]?.notes || null
         }
       });
       setDirtyNotes(prev => {
@@ -205,9 +212,6 @@ export default function RunStory() {
                         </div>
                       )}
                     </div>
-                    {test.notes && (
-                      <p className="text-sm text-gray-600 mt-1">{test.notes}</p>
-                    )}
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -244,21 +248,56 @@ export default function RunStory() {
                 </div>
 
                 <div className="mt-3">
-                  <div className="flex gap-2">
-                    <textarea
-                      value={notes[test.id] || ""}
-                      onChange={(e) => handleNotesChange(test.id, e.target.value)}
-                      className="flex-1 border rounded p-2 text-sm"
-                      rows={2}
-                      placeholder="Add notes about this test..."
-                    />
-                    {dirtyNotes.has(test.id) && (
-                      <button
-                        onClick={() => handleSaveNotes(test.id)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
-                      >
-                        Save Notes
-                      </button>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <textarea
+                        value={notes[test.id]?.notes || ""}
+                        onChange={(e) => handleNotesChange(test.id, { ...notes[test.id], notes: e.target.value })}
+                        className="flex-1 border rounded p-2 text-sm bg-white text-black"
+                        rows={3}
+                        placeholder="Add notes about this test..."
+                      />
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => {
+                            const currentNotes = notes[test.id] || { notes: '' };
+                            if (notes[test.id]?.code !== undefined) {
+                              // If there's code, remove it completely
+                              const { code, ...restNotes } = notes[test.id];
+                              handleNotesChange(test.id, restNotes);
+                            } else {
+                              // If no code, add empty code field
+                              handleNotesChange(test.id, { ...currentNotes, code: '' });
+                            }
+                          }}
+                          className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200 flex items-center gap-1 h-full"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                          {notes[test.id]?.code !== undefined ? 'Remove Code' : 'Add Code'}
+                        </button>
+                        {dirtyNotes.has(test.id) && (
+                          <button
+                            onClick={() => handleSaveNotes(test.id)}
+                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 h-full"
+                          >
+                            Save Notes
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {notes[test.id]?.code !== undefined && (
+                      <div className="relative">
+                        <div className="text-sm text-gray-700 font-medium mb-1">Error Code:</div>
+                        <textarea
+                          value={notes[test.id]?.code || ""}
+                          onChange={(e) => handleNotesChange(test.id, { ...notes[test.id], code: e.target.value })}
+                          className="w-full border rounded p-2 text-sm font-mono bg-[#1E1E1E] text-white"
+                          rows={6}
+                          placeholder="Add test code here..."
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
