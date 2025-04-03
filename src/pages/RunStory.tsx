@@ -10,6 +10,11 @@ type TestStatus = "not_tested" | "passed" | "failed";
 interface TestNotes {
   notes: string;
   code?: string;
+  history?: {
+    note: string;
+    timestamp: string;
+    author?: string;
+  }[];
 }
 
 export default function RunStory() {
@@ -23,6 +28,12 @@ export default function RunStory() {
   const [totalTests, setTotalTests] = useState(0);
   const [expandedTestId, setExpandedTestId] = useState<number | null>(null);
   const [dirtyNotes, setDirtyNotes] = useState<Set<number>>(new Set());
+  const [newNote, setNewNote] = useState<Record<number, string>>({});
+  const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
+  const [expandedLongNotes, setExpandedLongNotes] = useState<Set<string>>(new Set());
+
+  const INITIAL_NOTES_SHOWN = 2;
+  const MAX_LINES_BEFORE_COLLAPSE = 20;
 
   // Fetch tests for all templates and deduplicate them
   useEffect(() => {
@@ -98,10 +109,37 @@ export default function RunStory() {
     }
   };
 
-  const handleNotesChange = (testId: number, value: TestNotes) => {
-    setNotes(prev => ({
+  const handleNotesChange = (testId: number, value: string) => {
+    setNewNote(prev => ({
       ...prev,
       [testId]: value
+    }));
+  };
+
+  const handleAddNote = (testId: number) => {
+    if (!newNote[testId]?.trim()) return;
+
+    const currentNotes = notes[testId] || { notes: '', history: [] };
+    const updatedHistory = [
+      ...(currentNotes.history || []),
+      {
+        note: newNote[testId],
+        timestamp: new Date().toISOString(),
+        // We can add author information here when available
+      }
+    ];
+
+    setNotes(prev => ({
+      ...prev,
+      [testId]: {
+        ...currentNotes,
+        notes: newNote[testId], // Current note is the latest one
+        history: updatedHistory
+      }
+    }));
+    setNewNote(prev => ({
+      ...prev,
+      [testId]: ''
     }));
     setDirtyNotes(prev => new Set(prev).add(testId));
   };
@@ -130,6 +168,40 @@ export default function RunStory() {
 
   const toggleTestExpansion = (testId: number) => {
     setExpandedTestId(expandedTestId === testId ? null : testId);
+  };
+
+  const toggleNoteExpansion = (testId: number) => {
+    setExpandedNotes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(testId)) {
+        newSet.delete(testId);
+      } else {
+        newSet.add(testId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleLongNoteExpansion = (noteId: string) => {
+    setExpandedLongNotes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId);
+      } else {
+        newSet.add(noteId);
+      }
+      return newSet;
+    });
+  };
+
+  const formatNote = (note: string, noteId: string) => {
+    const lines = note.split('\n');
+    if (lines.length <= MAX_LINES_BEFORE_COLLAPSE) return note;
+
+    const isExpanded = expandedLongNotes.has(noteId);
+    if (isExpanded) return note;
+
+    return lines.slice(0, MAX_LINES_BEFORE_COLLAPSE).join('\n') + '\n...';
   };
 
   if (isLoadingStory) {
@@ -250,49 +322,106 @@ export default function RunStory() {
                 <div className="mt-3">
                   <div className="space-y-3">
                     <div className="flex gap-2">
-                      <textarea
-                        value={notes[test.id]?.notes || ""}
-                        onChange={(e) => handleNotesChange(test.id, { ...notes[test.id], notes: e.target.value })}
-                        className="flex-1 border rounded p-2 text-sm bg-white text-black"
-                        rows={3}
-                        placeholder="Add notes about this test..."
-                      />
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => {
-                            const currentNotes = notes[test.id] || { notes: '' };
-                            if (notes[test.id]?.code !== undefined) {
-                              // If there's code, remove it completely
-                              const { code, ...restNotes } = notes[test.id];
-                              handleNotesChange(test.id, restNotes);
-                            } else {
-                              // If no code, add empty code field
-                              handleNotesChange(test.id, { ...currentNotes, code: '' });
-                            }
-                          }}
-                          className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200 flex items-center gap-1 h-full"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                          {notes[test.id]?.code !== undefined ? 'Remove Code' : 'Add Code'}
-                        </button>
-                        {dirtyNotes.has(test.id) && (
+                      <div className="flex-1">
+                        <textarea
+                          value={newNote[test.id] || ""}
+                          onChange={(e) => handleNotesChange(test.id, e.target.value)}
+                          className="w-full border rounded p-2 text-sm bg-white text-black"
+                          rows={3}
+                          placeholder="Add a new note..."
+                        />
+                        <div className="flex justify-end mt-2">
                           <button
-                            onClick={() => handleSaveNotes(test.id)}
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 h-full"
+                            onClick={() => handleAddNote(test.id)}
+                            disabled={!newNote[test.id]?.trim()}
+                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Save Notes
+                            Add Note
                           </button>
-                        )}
+                        </div>
                       </div>
                     </div>
+
+                    {notes[test.id]?.history && notes[test.id].history!.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-sm text-gray-700 font-medium">History:</div>
+                        <div className="space-y-2">
+                          {notes[test.id].history!
+                            .slice(0, expandedNotes.has(test.id) ? undefined : INITIAL_NOTES_SHOWN)
+                            .map((historyItem, index) => {
+                              const noteId = `${test.id}-${index}-${historyItem.timestamp}`;
+                              const lines = historyItem.note.split('\n');
+                              const isLongNote = lines.length > MAX_LINES_BEFORE_COLLAPSE;
+
+                              return (
+                                <div key={index} className="bg-gray-50 rounded p-2 text-sm">
+                                  <div className="text-gray-500 text-xs mb-1">
+                                    {new Date(historyItem.timestamp).toLocaleString()}
+                                    {historyItem.author && ` - ${historyItem.author}`}
+                                  </div>
+                                  <div className="whitespace-pre-wrap">
+                                    {formatNote(historyItem.note, noteId)}
+                                  </div>
+                                  {isLongNote && (
+                                    <button
+                                      onClick={() => toggleLongNoteExpansion(noteId)}
+                                      className="mt-1 text-blue-500 hover:text-blue-600 text-xs font-medium flex items-center gap-1"
+                                    >
+                                      {expandedLongNotes.has(noteId) ? (
+                                        <>
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                          </svg>
+                                          Show Less
+                                        </>
+                                      ) : (
+                                        <>
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                          </svg>
+                                          Show More ({lines.length - MAX_LINES_BEFORE_COLLAPSE} more lines)
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            }).reverse()}
+                          {notes[test.id].history!.length > INITIAL_NOTES_SHOWN && (
+                            <button
+                              onClick={() => toggleNoteExpansion(test.id)}
+                              className="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
+                            >
+                              {expandedNotes.has(test.id) ? (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                  </svg>
+                                  Show Less
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                  Show More ({notes[test.id].history!.length - INITIAL_NOTES_SHOWN} more)
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {notes[test.id]?.code !== undefined && (
                       <div className="relative">
-                        <div className="text-sm text-gray-700 font-medium mb-1">Error Code:</div>
+                        <div className="text-sm text-gray-700 font-medium mb-1">Test Code:</div>
                         <textarea
                           value={notes[test.id]?.code || ""}
-                          onChange={(e) => handleNotesChange(test.id, { ...notes[test.id], code: e.target.value })}
+                          onChange={(e) => setNotes(prev => ({
+                            ...prev,
+                            [test.id]: { ...notes[test.id], code: e.target.value }
+                          }))}
                           className="w-full border rounded p-2 text-sm font-mono bg-[#1E1E1E] text-white"
                           rows={6}
                           placeholder="Add test code here..."
