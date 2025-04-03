@@ -15,6 +15,7 @@ interface CardProps {
   metadata?: {
     label: string;
     value: string | number;
+    className?: string;
   }[];
   actionButton?: {
     label: string;
@@ -53,7 +54,7 @@ export default function Card({
             <h3 className="text-lg font-semibold text-gray-900 mb-1">{title}</h3>
             {metadata?.map((item, index) => (
               <div key={index} className="text-sm text-gray-600">
-                <span className="font-medium">{item.value}</span> {item.label}
+                <span className={`font-medium ${item.className || ''}`}>{item.value}</span> {item.label}
               </div>
             ))}
             {owner && <OwnerInfo owner={owner} />}

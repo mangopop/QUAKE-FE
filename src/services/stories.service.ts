@@ -158,6 +158,7 @@ export const useUpdateTestResult = () => {
     mutationFn: ({ storyId, testId, data }: { storyId: string; testId: number; data: { status: "not_tested" | "passed" | "failed"; notes?: string | null } }) =>
       storiesService.updateTestResult(storyId, testId, data),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.stories });
       queryClient.invalidateQueries({ queryKey: queryKeys.story(variables.storyId) });
     }
   });

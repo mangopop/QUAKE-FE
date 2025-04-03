@@ -16,6 +16,19 @@ export default function Stories() {
   const [templateTestCounts, setTemplateTestCounts] = useState<Record<number, number>>({});
   const navigate = useNavigate();
 
+  // Calculate test results for a story
+  const getTestResults = (story: Story) => {
+    if (!story.testResults || story.testResults.length === 0) {
+      return { passed: 0, total: 0, percentage: 0 };
+    }
+
+    const total = story.testResults.length;
+    const passed = story.testResults.filter(result => result.status === "passed").length;
+    const percentage = Math.round((passed / total) * 100);
+
+    return { passed, total, percentage };
+  };
+
   // Fetch test counts for all templates
   useEffect(() => {
     const fetchTestCounts = async () => {
@@ -88,41 +101,69 @@ export default function Stories() {
       />
 
       <div className="grid gap-4">
-        {filteredStories.map((story) => (
-          <Card
-            key={story.id}
-            title={story.name}
-            owner={story.owner}
-            onEdit={() => navigate(`/stories/${story.id}/edit`)}
-            onDelete={() => handleDeleteStory(story.id)}
-            metadata={[
-              { label: "templates", value: story.templates.length }
-            ]}
-            actionButton={{
-              label: "Run",
-              onClick: () => navigate(`/stories/${story.id}/run`),
-              icon: (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )
-            }}
-          >
-            {story.templates.map((template) => (
-              <div key={template.id} className="bg-gray-50 rounded-lg p-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium text-gray-900">{template.name}</h4>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">{templateTestCounts[template.id] || 0}</span> tests
+        {filteredStories.map((story) => {
+          const results = getTestResults(story);
+          return (
+            <Card
+              key={story.id}
+              title={story.name}
+              owner={story.owner}
+              onEdit={() => navigate(`/stories/${story.id}/edit`)}
+              onDelete={() => handleDeleteStory(story.id)}
+              metadata={[
+                {
+                  label: "templates",
+                  value: story.templates.length
+                },
+                {
+                  label: "tests passed",
+                  value: `${results.passed}/${results.total}`,
+                  className: results.total > 0 ? (
+                    results.percentage >= 80 ? "text-green-600" :
+                    results.percentage >= 50 ? "text-yellow-600" :
+                    "text-red-600"
+                  ) : undefined
+                },
+                ...(results.total > 0 ? [{
+                  label: "pass rate",
+                  value: `${results.percentage}%`,
+                  className: results.percentage >= 80 ? "text-green-600" :
+                            results.percentage >= 50 ? "text-yellow-600" :
+                            "text-red-600"
+                }] : [])
+              ]}
+              tags={results.total > 0 && results.percentage === 100 ? [
+                {
+                  text: "PASSED",
+                  className: "bg-green-100 text-green-800 border border-green-200 font-semibold"
+                }
+              ] : undefined}
+              actionButton={{
+                label: "Run",
+                onClick: () => navigate(`/stories/${story.id}/run`),
+                icon: (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )
+              }}
+            >
+              {story.templates.map((template) => (
+                <div key={template.id} className="bg-gray-50 rounded-lg p-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium text-gray-900">{template.name}</h4>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium">{templateTestCounts[template.id] || 0}</span> tests
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </Card>
-        ))}
+              ))}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
