@@ -301,35 +301,35 @@ export default function RunStory() {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleStatusChange(test.id, "not_tested")}
-                      className={`px-3 py-1 rounded text-sm ${
-                        testStatuses[test.id] === "not_tested"
-                          ? "bg-gray-500 text-white"
-                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      }`}
-                    >
-                      Not Tested
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(test.id, "passed")}
-                      className={`px-3 py-1 rounded text-sm ${
-                        testStatuses[test.id] === "passed"
-                          ? "bg-green-500 text-white"
-                          : "bg-green-200 text-green-700 hover:bg-green-300"
-                      }`}
-                    >
-                      Passed
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(test.id, "failed")}
-                      className={`px-3 py-1 rounded text-sm ${
-                        testStatuses[test.id] === "failed"
-                          ? "bg-red-500 text-white"
-                          : "bg-red-200 text-red-700 hover:bg-red-300"
-                      }`}
-                    >
-                      Failed
-                    </button>
+                        onClick={() => handleStatusChange(test.id, 'not_tested')}
+                        className={`px-3 py-1 rounded-md text-sm font-medium ${
+                          testStatuses[test.id] === 'not_tested'
+                            ? 'bg-gray-500 text-white'
+                            : 'text-gray-500 hover:text-gray-800'
+                        }`}
+                      >
+                        Not Tested
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(test.id, 'passed')}
+                        className={`px-3 py-1 rounded-md text-sm font-medium ${
+                          testStatuses[test.id] === 'passed'
+                            ? 'bg-green-500 text-white'
+                            : 'text-gray-500 hover:text-green-800'
+                        }`}
+                      >
+                        Passed
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(test.id, 'failed')}
+                        className={`px-3 py-1 rounded-md text-sm font-medium ${
+                          testStatuses[test.id] === 'failed'
+                            ? 'bg-red-500 text-white'
+                            : 'text-gray-500 hover:text-red-800'
+                        }`}
+                      >
+                        Failed
+                      </button>
                   </div>
                 </div>
 
