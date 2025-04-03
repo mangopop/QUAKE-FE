@@ -99,13 +99,26 @@ export default function RunStory() {
       const initialStatuses: Record<number, TestStatus> = {};
       const testResults = story.testResults as unknown as TestResult[];
 
+      // First, set all tests to "not_tested"
+      uniqueTests.forEach(test => {
+        initialStatuses[test.id] = "not_tested";
+      });
+
+      // Then update with any existing test results
       testResults.forEach((result) => {
         initialStatuses[result.test.id] = result.status;
       });
 
       setTestStatuses(initialStatuses);
+    } else {
+      // If no test results, set all tests to "not_tested"
+      const initialStatuses: Record<number, TestStatus> = {};
+      uniqueTests.forEach(test => {
+        initialStatuses[test.id] = "not_tested";
+      });
+      setTestStatuses(initialStatuses);
     }
-  }, [story]);
+  }, [story, uniqueTests]);
 
   const handleStatusChange = async (testId: number, status: TestStatus) => {
     if (!storyId) return;
