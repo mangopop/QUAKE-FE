@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useStories, useCreateStory, useDeleteStory, useTestsByTemplate, storiesService } from "../services/stories.service";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useStories, useCreateStory, useDeleteStory, useTemplates } from "../services/stories.service";
 import type { Story } from "../services/types";
 import CreateStoryModal from "../components/CreateStoryModal";
 import Card from "../components/Card";
@@ -10,10 +10,10 @@ import SearchInput from "../components/SearchInput";
 export default function Stories() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const { data: stories, isLoading } = useStories();
+  const { data: stories, isLoading: isLoadingStories } = useStories();
+  const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
   const createStory = useCreateStory();
   const deleteStory = useDeleteStory();
-  const [templateTestCounts, setTemplateTestCounts] = useState<Record<number, number>>({});
   const navigate = useNavigate();
 
   // Calculate test results for a story
@@ -29,30 +29,9 @@ export default function Stories() {
     return { passed, total, percentage };
   };
 
-  // Fetch test counts for all templates
-  useEffect(() => {
-    const fetchTestCounts = async () => {
-      if (!stories) return;
-
-      const counts: Record<number, number> = {};
-
-      for (const story of stories) {
-        for (const template of story.templates) {
-          try {
-            const tests = await storiesService.getTestsByTemplate(template.id);
-            counts[template.id] = tests.length;
-          } catch (error) {
-            console.error(`Error fetching tests for template ${template.id}:`, error);
-            counts[template.id] = 0;
-          }
-        }
-      }
-
-      setTemplateTestCounts(counts);
-    };
-
-    fetchTestCounts();
-  }, [stories]);
+  const getTemplateWithTests = (templateId: number) => {
+    return templates?.find(t => t.id === templateId);
+  };
 
   const handleCreateStory = async (story: { name: string; templateIds: number[] }) => {
     try {
@@ -71,7 +50,7 @@ export default function Stories() {
     }
   };
 
-  if (isLoading) {
+  if (isLoadingStories || isLoadingTemplates) {
     return <div>Loading...</div>;
   }
 
@@ -149,18 +128,23 @@ export default function Stories() {
                 )
               }}
             >
-              {story.templates.map((template) => (
-                <div key={template.id} className="bg-gray-50 rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{template.name}</h4>
+              <div className="space-y-2">
+                {story.templates.map((template) => {
+                  const fullTemplate = getTemplateWithTests(template.id);
+                  return (
+                    <div key={template.id} className="bg-gray-50 rounded-lg p-3">
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{template.name}</h4>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">{fullTemplate?.tests?.length || 0}</span> tests
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      <span className="font-medium">{templateTestCounts[template.id] || 0}</span> tests
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </Card>
           );
         })}
