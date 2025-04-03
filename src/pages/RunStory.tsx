@@ -8,13 +8,35 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 type TestStatus = "not_tested" | "passed" | "failed";
 
 interface TestNotes {
-  notes: string;
+  id: number;
+  note: string;
+  createdAt: string;
   code?: string;
-  history?: {
-    note: string;
-    timestamp: string;
-    author?: string;
-  }[];
+}
+
+interface TestResult {
+  id: number;
+  status: TestStatus;
+  notes: TestNotes[];
+  test: {
+    id: number;
+    name: string;
+    owner: {
+      id: number;
+      email: string;
+      firstName: string;
+      lastName: string;
+    };
+    notes: string | null;
+    categories: any[][];
+    sections: any[];
+    createdAt: string;
+  };
+}
+
+interface CurrentNote {
+  note: string;
+  code?: string;
 }
 
 export default function RunStory() {
@@ -23,7 +45,7 @@ export default function RunStory() {
   const { data: story, isLoading: isLoadingStory } = useStory(storyId || "");
   const updateTestResult = useUpdateTestResult();
   const [testStatuses, setTestStatuses] = useState<Record<number, TestStatus>>({});
-  const [notes, setNotes] = useState<Record<number, TestNotes>>({});
+  const [notes, setNotes] = useState<Record<number, CurrentNote>>({});
   const [uniqueTests, setUniqueTests] = useState<Test[]>([]);
   const [totalTests, setTotalTests] = useState(0);
   const [expandedTestId, setExpandedTestId] = useState<number | null>(null);
@@ -70,17 +92,13 @@ export default function RunStory() {
   useEffect(() => {
     if (story?.testResults) {
       const initialStatuses: Record<number, TestStatus> = {};
-      const initialNotes: Record<number, TestNotes> = {};
+      const testResults = story.testResults as unknown as TestResult[];
 
-      story.testResults.forEach(result => {
-        initialStatuses[result.test.id] = result.status as TestStatus || "not_tested";
-        if (result.notes) {
-          initialNotes[result.test.id] = { notes: result.notes };
-        }
+      testResults.forEach((result) => {
+        initialStatuses[result.test.id] = result.status;
       });
 
       setTestStatuses(initialStatuses);
-      setNotes(initialNotes);
     }
   }, [story]);
 
@@ -101,7 +119,7 @@ export default function RunStory() {
         testId,
         data: {
           status,
-          notes: notes[testId]?.notes || null
+          notes: notes[testId]?.note || null
         }
       });
     } catch (error) {
@@ -116,36 +134,8 @@ export default function RunStory() {
     }));
   };
 
-  const handleAddNote = (testId: number) => {
-    if (!newNote[testId]?.trim()) return;
-
-    const currentNotes = notes[testId] || { notes: '', history: [] };
-    const updatedHistory = [
-      ...(currentNotes.history || []),
-      {
-        note: newNote[testId],
-        timestamp: new Date().toISOString(),
-        // We can add author information here when available
-      }
-    ];
-
-    setNotes(prev => ({
-      ...prev,
-      [testId]: {
-        ...currentNotes,
-        notes: newNote[testId], // Current note is the latest one
-        history: updatedHistory
-      }
-    }));
-    setNewNote(prev => ({
-      ...prev,
-      [testId]: ''
-    }));
-    setDirtyNotes(prev => new Set(prev).add(testId));
-  };
-
   const handleSaveNotes = async (testId: number) => {
-    if (!storyId) return;
+    if (!storyId || !newNote[testId]?.trim()) return;
 
     try {
       await updateTestResult.mutateAsync({
@@ -153,9 +143,15 @@ export default function RunStory() {
         testId,
         data: {
           status: testStatuses[testId] || "not_tested",
-          notes: notes[testId]?.notes || null
+          notes: newNote[testId]
         }
       });
+
+      // Clear the new note input after successful save
+      setNewNote(prev => ({
+        ...prev,
+        [testId]: ''
+      }));
       setDirtyNotes(prev => {
         const newSet = new Set(prev);
         newSet.delete(testId);
@@ -325,93 +321,100 @@ export default function RunStory() {
                       <div className="flex-1">
                         <textarea
                           value={newNote[test.id] || ""}
-                          onChange={(e) => handleNotesChange(test.id, e.target.value)}
+                          onChange={(e) => {
+                            handleNotesChange(test.id, e.target.value);
+                            setDirtyNotes(prev => new Set(prev).add(test.id));
+                          }}
                           className="w-full border rounded p-2 text-sm bg-white text-black"
                           rows={3}
                           placeholder="Add a new note..."
                         />
                         <div className="flex justify-end mt-2">
                           <button
-                            onClick={() => handleAddNote(test.id)}
+                            onClick={() => handleSaveNotes(test.id)}
                             disabled={!newNote[test.id]?.trim()}
                             className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Add Note
+                            Save Note
                           </button>
                         </div>
                       </div>
                     </div>
 
-                    {notes[test.id]?.history && notes[test.id].history!.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="text-sm text-gray-700 font-medium">History:</div>
-                        <div className="space-y-2">
-                          {notes[test.id].history!
-                            .slice(0, expandedNotes.has(test.id) ? undefined : INITIAL_NOTES_SHOWN)
-                            .map((historyItem, index) => {
-                              const noteId = `${test.id}-${index}-${historyItem.timestamp}`;
-                              const lines = historyItem.note.split('\n');
-                              const isLongNote = lines.length > MAX_LINES_BEFORE_COLLAPSE;
+                    {(() => {
+                      const testResult = story?.testResults?.find(r => r.test.id === test.id) as TestResult | undefined;
+                      const notes = testResult?.notes || [];
 
-                              return (
-                                <div key={index} className="bg-gray-50 rounded p-2 text-sm">
-                                  <div className="text-gray-500 text-xs mb-1">
-                                    {new Date(historyItem.timestamp).toLocaleString()}
-                                    {historyItem.author && ` - ${historyItem.author}`}
+                      return notes.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-sm text-gray-700 font-medium">History:</div>
+                          <div className="space-y-2">
+                            {notes
+                              .slice(0, expandedNotes.has(test.id) ? undefined : INITIAL_NOTES_SHOWN)
+                              .map((historyItem) => {
+                                const noteId = `${test.id}-${historyItem.id}-${historyItem.createdAt}`;
+                                const lines = historyItem.note.split('\n');
+                                const isLongNote = lines.length > MAX_LINES_BEFORE_COLLAPSE;
+
+                                return (
+                                  <div key={historyItem.id} className="bg-gray-50 rounded p-2 text-sm">
+                                    <div className="text-gray-500 text-xs mb-1">
+                                      {new Date(historyItem.createdAt).toLocaleString()}
+                                    </div>
+                                    <div className="whitespace-pre-wrap">
+                                      {formatNote(historyItem.note, noteId)}
+                                    </div>
+                                    {isLongNote && (
+                                      <button
+                                        onClick={() => toggleLongNoteExpansion(noteId)}
+                                        className="mt-1 text-blue-500 hover:text-blue-600 text-xs font-medium flex items-center gap-1"
+                                      >
+                                        {expandedLongNotes.has(noteId) ? (
+                                          <>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                            </svg>
+                                            Show Less
+                                          </>
+                                        ) : (
+                                          <>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                            Show More ({lines.length - MAX_LINES_BEFORE_COLLAPSE} more lines)
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
                                   </div>
-                                  <div className="whitespace-pre-wrap">
-                                    {formatNote(historyItem.note, noteId)}
-                                  </div>
-                                  {isLongNote && (
-                                    <button
-                                      onClick={() => toggleLongNoteExpansion(noteId)}
-                                      className="mt-1 text-blue-500 hover:text-blue-600 text-xs font-medium flex items-center gap-1"
-                                    >
-                                      {expandedLongNotes.has(noteId) ? (
-                                        <>
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                          </svg>
-                                          Show Less
-                                        </>
-                                      ) : (
-                                        <>
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                          </svg>
-                                          Show More ({lines.length - MAX_LINES_BEFORE_COLLAPSE} more lines)
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            }).reverse()}
-                          {notes[test.id].history!.length > INITIAL_NOTES_SHOWN && (
-                            <button
-                              onClick={() => toggleNoteExpansion(test.id)}
-                              className="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
-                            >
-                              {expandedNotes.has(test.id) ? (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                  </svg>
-                                  Show Less
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                  Show More ({notes[test.id].history!.length - INITIAL_NOTES_SHOWN} more)
-                                </>
-                              )}
-                            </button>
-                          )}
+                                );
+                              }).reverse()}
+                            {notes.length > INITIAL_NOTES_SHOWN && (
+                              <button
+                                onClick={() => toggleNoteExpansion(test.id)}
+                                className="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
+                              >
+                                {expandedNotes.has(test.id) ? (
+                                  <>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                    Show Less
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                    Show More ({notes.length - INITIAL_NOTES_SHOWN} more)
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      ) : null;
+                    })()}
 
                     {notes[test.id]?.code !== undefined && (
                       <div className="relative">
