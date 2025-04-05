@@ -13,6 +13,7 @@ import AddTestToStory from "./pages/AddTestToStory";
 import RunStory from "./pages/RunStory";
 import StoryDetails from "./pages/StoryDetails";
 import Layout from "./components/common/Layout";
+import Dashboard from "./pages/Dashboard";
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -48,6 +49,7 @@ export default function App() {
               </ProtectedRoute>
             }
           >
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="tests">
               <Route index element={<TestList />} />
               <Route path=":testId/edit" element={<EditTest />} />

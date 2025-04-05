@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { BarChart2, FileText, List, Settings, LogOut } from 'lucide-react';
 
 interface NavItem {
   name: string;
@@ -8,32 +9,25 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    name: 'Tests',
-    path: '/tests',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-    ),
+    name: 'Dashboard',
+    path: '/dashboard',
+    icon: <BarChart2 className="w-5 h-5" />
   },
   {
-    name: 'Templates',
-    path: '/templates',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-      </svg>
-    ),
+    name: 'Tests',
+    path: '/tests',
+    icon: <FileText className="w-5 h-5" />
   },
   {
     name: 'Stories',
     path: '/stories',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />
-      </svg>
-    ),
+    icon: <List className="w-5 h-5" />
   },
+  {
+    name: 'Templates',
+    path: '/templates',
+    icon: <Settings className="w-5 h-5" />
+  }
 ];
 
 export default function Header() {
@@ -50,7 +44,7 @@ export default function Header() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/tests" className="flex items-center space-x-2">
+              <Link to="/dashboard" className="flex items-center space-x-2">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -82,12 +76,10 @@ export default function Header() {
           <div className="flex items-center">
             <button
               onClick={handleLogout}
-              className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2"
+              className="text-white/80 hover:text-white flex items-center space-x-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span>Sign out</span>
+              <LogOut className="w-5 h-5" />
+              <span>Logout</span>
             </button>
           </div>
         </div>

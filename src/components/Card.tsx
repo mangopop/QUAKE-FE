@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import OwnerInfo from './OwnerInfo';
 
 interface CardProps {
-  title: string;
+  title?: string;
   owner?: {
     id: number;
     email: string;
@@ -32,6 +32,7 @@ interface CardProps {
     description?: string;
     className?: string;
   }[];
+  className?: string;
 }
 
 export default function Card({
@@ -44,14 +45,15 @@ export default function Card({
   actionButton,
   notes,
   tags,
-  sections
+  sections,
+  className = ''
 }: CardProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition-colors flex flex-col h-full">
+    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition-colors flex flex-col h-full ${className}`}>
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-1 break-words">{title}</h3>
+            {title && <h3 className="text-lg font-semibold text-gray-900 mb-1 break-words">{title}</h3>}
             {owner && <OwnerInfo owner={owner} />}
           </div>
           <div className="flex gap-2 flex-shrink-0">
@@ -82,7 +84,7 @@ export default function Card({
 
         <div className="flex flex-wrap gap-4 mb-3">
           {metadata?.map((item, index) => (
-            <div key={index} className="text-sm text-gray-600">
+            <div key={index} className={`text-sm text-gray-600 ${item.className || ''}`}>
               <span className={`font-medium ${item.className || ''}`}>{item.value}</span> {item.label}
             </div>
           ))}
