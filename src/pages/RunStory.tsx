@@ -2,23 +2,19 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   useStory,
-  useUpdateStory,
-  useTestsByTemplate,
   useUpdateTestResult,
   useUpdateSectionResult,
   useSectionResults,
-  useSectionNotes,
   useAddSectionNote,
   storiesService
 } from "../services/stories.service";
-import type { Story, Template, Test, SectionResult, SectionNote, Section } from "../services/types";
+import type { Test, SectionResult, Section } from "../services/types";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useQueryClient } from "@tanstack/react-query";
-import StatusButton from '../components/common/StatusButton';
-import NoteButton from '../components/common/NoteButton';
 import BackButton from '../components/common/BackButton';
-import NotesSection from '../components/common/NotesSection';
+import TestCard from '../components/common/TestCard';
+import StatusHeader from '../components/common/StatusHeader';
 
 type TestStatus = "not_tested" | "passed" | "failed";
 
@@ -55,32 +51,17 @@ interface TestResult {
   };
 }
 
-interface CurrentNote {
-  note: string;
-  code?: string;
-}
-
 export default function RunStory() {
   const { storyId } = useParams<{ storyId: string }>();
-  const navigate = useNavigate();
   const { data: story, isLoading: isLoadingStory } = useStory(storyId || "");
   const updateTestResult = useUpdateTestResult();
   const updateSectionResult = useUpdateSectionResult();
   const { data: sectionResultsData } = useSectionResults(storyId || "");
   const addSectionNote = useAddSectionNote();
   const [testStatuses, setTestStatuses] = useState<Record<number, TestStatus>>({});
-  const [notes, setNotes] = useState<Record<number, CurrentNote>>({});
   const [uniqueTests, setUniqueTests] = useState<Test[]>([]);
   const [totalTests, setTotalTests] = useState(0);
-  const [expandedTestId, setExpandedTestId] = useState<number | null>(null);
-  const [dirtyNotes, setDirtyNotes] = useState<Set<number>>(new Set());
-  const [newNote, setNewNote] = useState<Record<number, string>>({});
-  const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
-  const [expandedLongNotes, setExpandedLongNotes] = useState<Set<string>>(new Set());
   const [sectionResults, setSectionResults] = useState<Record<number, SectionResult>>({});
-  const [sectionNotes, setSectionNotes] = useState<Record<number, Record<number, string>>>({});
-  const [dirtySectionNotes, setDirtySectionNotes] = useState<Set<string>>(new Set());
-  const [expandedSectionNotes, setExpandedSectionNotes] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   const INITIAL_NOTES_SHOWN = 2;
@@ -191,7 +172,7 @@ export default function RunStory() {
         testId,
         data: {
           status,
-          notes: notes[testId]?.note || null
+          notes: null
         }
       });
     } catch (error) {
@@ -223,13 +204,6 @@ export default function RunStory() {
     }
   };
 
-  const handleNotesChange = (testId: number, value: string) => {
-    setNewNote(prev => ({
-      ...prev,
-      [testId]: value
-    }));
-  };
-
   const handleSaveNotes = async (testId: number, note: string) => {
     if (!storyId || !note.trim()) return;
 
@@ -242,31 +216,9 @@ export default function RunStory() {
           notes: note
         }
       });
-
-      // Clear the new note input after successful save
-      setNewNote(prev => ({
-        ...prev,
-        [testId]: ''
-      }));
-      setDirtyNotes(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(testId);
-        return newSet;
-      });
     } catch (error) {
       console.error('Failed to save notes:', error);
     }
-  };
-
-  const handleSectionNotesChange = (testId: number, sectionId: number, value: string) => {
-    setSectionNotes(prev => ({
-      ...prev,
-      [testId]: {
-        ...prev[testId],
-        [sectionId]: value
-      }
-    }));
-    setDirtySectionNotes(prev => new Set(prev).add(`${testId}-${sectionId}`));
   };
 
   const handleSaveSectionNotes = async (testId: number, sectionId: number, note: string) => {
@@ -278,69 +230,9 @@ export default function RunStory() {
         sectionId,
         data: { note }
       });
-
-      // Clear the note input after successful save
-      setSectionNotes(prev => ({
-        ...prev,
-        [testId]: {
-          ...prev[testId],
-          [sectionId]: ''
-        }
-      }));
     } catch (error) {
       console.error('Failed to save section notes:', error);
     }
-  };
-
-  const toggleTestExpansion = (testId: number) => {
-    setExpandedTestId(expandedTestId === testId ? null : testId);
-  };
-
-  const toggleNoteExpansion = (testId: number) => {
-    setExpandedNotes(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(testId)) {
-        newSet.delete(testId);
-      } else {
-        newSet.add(testId);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleLongNoteExpansion = (noteId: string) => {
-    setExpandedLongNotes(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(noteId)) {
-        newSet.delete(noteId);
-      } else {
-        newSet.add(noteId);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleSectionNotes = (testId: number, sectionId: number) => {
-    const key = `${testId}-${sectionId}`;
-    setExpandedSectionNotes(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(key)) {
-        newSet.delete(key);
-      } else {
-        newSet.add(key);
-      }
-      return newSet;
-    });
-  };
-
-  const formatNote = (note: string, noteId: string) => {
-    const lines = note.split('\n');
-    if (lines.length <= MAX_LINES_BEFORE_COLLAPSE) return note;
-
-    const isExpanded = expandedLongNotes.has(noteId);
-    if (isExpanded) return note;
-
-    return lines.slice(0, MAX_LINES_BEFORE_COLLAPSE).join('\n') + '\n...';
   };
 
   if (isLoadingStory) {
@@ -370,119 +262,30 @@ export default function RunStory() {
   return (
     <div className="p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">Run Story: {story.name}</h2>
-          <BackButton />
-        </div>
-
-        {totalTests > uniqueTests.length && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700">
-                  {totalTests - uniqueTests.length} duplicate test{totalTests - uniqueTests.length === 1 ? '' : 's'} {totalTests - uniqueTests.length === 1 ? 'was' : 'were'} removed from the list.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        <StatusHeader
+          title={`Run Story: ${story.name}`}
+          totalTests={totalTests}
+          uniqueTests={uniqueTests.length}
+        />
 
         <div className="space-y-4">
           {uniqueTests.map((test) => (
-            <div key={test.id} className="bg-white p-6 rounded-lg shadow-sm border">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">{test.name}</h3>
-                <div className="flex space-x-2">
-                  <StatusButton
-                    status="passed"
-                    currentStatus={testStatuses[test.id]}
-                    onClick={() => handleStatusChange(test.id, "passed")}
-                  />
-                  <StatusButton
-                    status="failed"
-                    currentStatus={testStatuses[test.id]}
-                    onClick={() => handleStatusChange(test.id, "failed")}
-                  />
-                </div>
-              </div>
-
-              {test.sections && test.sections.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {test.sections.map((section) => (
-                    <div key={section.id} className="bg-gray-50 p-4 rounded">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="font-medium">{section.name}</h4>
-                          <p className="text-sm text-gray-600">{section.description}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <StatusButton
-                            status="not_tested"
-                            currentStatus={sectionResults[section.id]?.status}
-                            onClick={() => handleSectionStatusChange(test.id, section.id, "not_tested")}
-                          />
-                          <StatusButton
-                            status="passed"
-                            currentStatus={sectionResults[section.id]?.status}
-                            onClick={() => handleSectionStatusChange(test.id, section.id, "passed")}
-                          />
-                          <StatusButton
-                            status="failed"
-                            currentStatus={sectionResults[section.id]?.status}
-                            onClick={() => handleSectionStatusChange(test.id, section.id, "failed")}
-                          />
-                          <NoteButton
-                            isExpanded={expandedSectionNotes.has(`${test.id}-${section.id}`)}
-                            onClick={() => toggleSectionNotes(test.id, section.id)}
-                          />
-                        </div>
-                      </div>
-
-                      {expandedSectionNotes.has(`${test.id}-${section.id}`) && (
-                        <div className="mt-3">
-                          <NotesSection
-                            notes={sectionResults[section.id]?.notes || []}
-                            onSaveNote={(note) => handleSaveSectionNotes(test.id, section.id, note)}
-                            initialNotesShown={INITIAL_NOTES_SHOWN}
-                            maxLinesBeforeCollapse={MAX_LINES_BEFORE_COLLAPSE}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-3">
-                <NotesSection
-                  notes={(() => {
-                    const testResult = story?.testResults?.find(r => r.test.id === test.id) as TestResult | undefined;
-                    return testResult?.notes || [];
-                  })()}
-                  onSaveNote={(note) => handleSaveNotes(test.id, note)}
-                  initialNotesShown={INITIAL_NOTES_SHOWN}
-                  maxLinesBeforeCollapse={MAX_LINES_BEFORE_COLLAPSE}
-                />
-              </div>
-
-              {expandedTestId === test.id && (
-                <div className="mt-3 space-y-2">
-                  {test.sections?.map((section, index) => (
-                    <div key={index} className="bg-gray-50 rounded p-2">
-                      <h4 className="font-medium text-sm">{section.name}</h4>
-                      {section.description && (
-                        <p className="text-sm text-gray-600">{section.description}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <TestCard
+              key={test.id}
+              test={test}
+              status={testStatuses[test.id]}
+              onStatusChange={(status) => handleStatusChange(test.id, status)}
+              onSaveNote={(note) => handleSaveNotes(test.id, note)}
+              sectionResults={sectionResults}
+              onSectionStatusChange={handleSectionStatusChange}
+              onSaveSectionNote={handleSaveSectionNotes}
+              notes={(() => {
+                const testResult = story?.testResults?.find(r => r.test.id === test.id) as TestResult | undefined;
+                return testResult?.notes || [];
+              })()}
+              initialNotesShown={INITIAL_NOTES_SHOWN}
+              maxLinesBeforeCollapse={MAX_LINES_BEFORE_COLLAPSE}
+            />
           ))}
         </div>
       </div>
