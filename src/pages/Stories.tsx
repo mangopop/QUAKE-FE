@@ -6,12 +6,12 @@ import type { Story, CreateStoryRequest, Category } from "../services/types";
 import CreateStoryModal from "../components/CreateStoryModal";
 import Card from "../components/Card";
 import PageHeader from "../components/PageHeader";
-import SearchInput from "../components/SearchInput";
-import Select from "../components/Select";
+import TestFilters from "../components/TestFilters";
 
 export default function Stories() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedOwnerId, setSelectedOwnerId] = useState(0);
   const { data: stories, isLoading: isLoadingStories } = useStories();
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
   const { data: categories, isLoading: isLoadingCategories } = useCategories();
@@ -57,12 +57,14 @@ export default function Stories() {
     return <div>Loading...</div>;
   }
 
+  const availableCategories = (categories || []).map(cat => cat.name);
+
   const filteredStories = stories?.filter(story => {
     const matchesSearch = story.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = !selectedCategory ||
       story.categories.some(category => {
-        const categoryId = typeof category === 'string' ? parseInt(category) : category.id;
-        return categoryId === selectedCategory;
+        const categoryName = typeof category === 'string' ? category : category.name;
+        return categoryName === selectedCategory;
       });
     return matchesSearch && matchesCategory;
   });
@@ -75,30 +77,18 @@ export default function Stories() {
         newButtonText="New Story"
       />
 
-      <div className="mb-6">
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <SearchInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search stories..."
-            />
-          </div>
-          <div className="w-48">
-            <Select
-              value={selectedCategory?.toString() || ""}
-              onChange={(value: string) => setSelectedCategory(value ? parseInt(value) : null)}
-              options={[
-                { value: "", label: "All Categories" },
-                ...(categories || []).map(category => ({
-                  value: category.id.toString(),
-                  label: category.name
-                }))
-              ]}
-            />
-          </div>
-        </div>
-      </div>
+      <TestFilters
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        selectedOwnerId={selectedOwnerId}
+        onOwnerChange={setSelectedOwnerId}
+        categories={availableCategories}
+        owners={[]}
+        isLoading={isLoadingCategories}
+        searchPlaceholder="Search stories..."
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredStories?.map((story) => {

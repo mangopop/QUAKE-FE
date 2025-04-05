@@ -11,6 +11,7 @@ interface TestFiltersProps {
   categories: string[]
   owners: Owner[]
   isLoading?: boolean
+  searchPlaceholder?: string
 }
 
 const TestFilters: React.FC<TestFiltersProps> = ({
@@ -23,6 +24,7 @@ const TestFilters: React.FC<TestFiltersProps> = ({
   categories,
   owners,
   isLoading = false,
+  searchPlaceholder = "Search tests..."
 }) => {
   return (
     <div className="mb-6">
@@ -30,7 +32,7 @@ const TestFilters: React.FC<TestFiltersProps> = ({
         <div className="flex-1 relative">
           <input
             type="text"
-            placeholder="Search tests..."
+            placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="border p-2 rounded w-full"
