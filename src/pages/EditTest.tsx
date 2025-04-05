@@ -87,51 +87,56 @@ export default function EditTest() {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Edit Test</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <FormInput
-          label="Test Name"
-          value={formData.name}
-          onChange={(value) => setFormData(prev => ({ ...prev, name: value }))}
-          placeholder="Enter test name"
-          required
-        />
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Edit Test</h2>
+          <ButtonGroup
+            onSubmit={handleSubmit}
+            onCancel={() => navigate("/tests")}
+            submitText={updateTest.isPending ? 'Saving...' : 'Save Changes'}
+            isSubmitDisabled={updateTest.isPending}
+          />
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <FormInput
+              label="Test Name"
+              value={formData.name}
+              onChange={(value) => setFormData(prev => ({ ...prev, name: value }))}
+              placeholder="Enter test name"
+              required
+            />
 
-        <FormCheckboxGroup
-          label="Categories"
-          options={categories?.map(category => ({
-            id: category.id.toString(),
-            label: category.name
-          })) || []}
-          selectedValues={formData.categories}
-          onChange={(selectedIds) => setFormData(prev => ({ ...prev, categories: selectedIds }))}
-        />
+            <FormCheckboxGroup
+              label="Categories"
+              options={categories?.map(category => ({
+                id: category.id.toString(),
+                label: category.name
+              })) || []}
+              selectedValues={formData.categories}
+              onChange={(selectedIds) => setFormData(prev => ({ ...prev, categories: selectedIds }))}
+            />
 
-        <FormSelect
-          label="Template (Optional)"
-          value={formData.templateId || ""}
-          onChange={(value) => setFormData(prev => ({ ...prev, templateId: value || undefined }))}
-          options={templates?.data?.map(template => ({
-            value: template.id.toString(),
-            label: template.name
-          })) || []}
-          placeholder="Select a template..."
-        />
+            <FormSelect
+              label="Template (Optional)"
+              value={formData.templateId || ""}
+              onChange={(value) => setFormData(prev => ({ ...prev, templateId: value || undefined }))}
+              options={templates?.data?.map(template => ({
+                value: template.id.toString(),
+                label: template.name
+              })) || []}
+              placeholder="Select a template..."
+            />
 
-        <SectionForm
-          sections={formData.sections}
-          onAddSection={addSection}
-          onRemoveSection={removeSection}
-          onUpdateSection={updateSection}
-        />
-
-        <ButtonGroup
-          onSubmit={handleSubmit}
-          onCancel={() => navigate("/tests")}
-          submitText={updateTest.isPending ? 'Saving...' : 'Save Changes'}
-          isSubmitDisabled={updateTest.isPending}
-        />
-      </form>
+            <SectionForm
+              sections={formData.sections}
+              onAddSection={addSection}
+              onRemoveSection={removeSection}
+              onUpdateSection={updateSection}
+            />
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
