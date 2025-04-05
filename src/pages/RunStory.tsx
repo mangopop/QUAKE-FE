@@ -15,6 +15,9 @@ import type { Story, Template, Test, SectionResult, SectionNote, Section } from 
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useQueryClient } from "@tanstack/react-query";
+import StatusButton from '../components/common/StatusButton';
+import NoteButton from '../components/common/NoteButton';
+import BackButton from '../components/common/BackButton';
 
 type TestStatus = "not_tested" | "passed" | "failed";
 
@@ -353,12 +356,7 @@ export default function RunStory() {
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold">Run Story: {story.name}</h2>
-            <button
-              onClick={() => navigate('/stories')}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-            >
-              Back to Stories
-            </button>
+            <BackButton />
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <p className="text-gray-600">No templates found for this story. Please add templates before running tests.</p>
@@ -373,12 +371,7 @@ export default function RunStory() {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Run Story: {story.name}</h2>
-          <button
-            onClick={() => navigate('/stories')}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          >
-            Back to Stories
-          </button>
+          <BackButton />
         </div>
 
         {totalTests > uniqueTests.length && (
@@ -404,26 +397,16 @@ export default function RunStory() {
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">{test.name}</h3>
                 <div className="flex space-x-2">
-                  <button
+                  <StatusButton
+                    status="passed"
+                    currentStatus={testStatuses[test.id]}
                     onClick={() => handleStatusChange(test.id, "passed")}
-                    className={`px-3 py-1 rounded ${
-                      testStatuses[test.id] === "passed"
-                        ? "bg-green-500 text-white"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
-                  >
-                    Pass
-                  </button>
-                  <button
+                  />
+                  <StatusButton
+                    status="failed"
+                    currentStatus={testStatuses[test.id]}
                     onClick={() => handleStatusChange(test.id, "failed")}
-                    className={`px-3 py-1 rounded ${
-                      testStatuses[test.id] === "failed"
-                        ? "bg-red-500 text-white"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
-                  >
-                    Fail
-                  </button>
+                  />
                 </div>
               </div>
 
@@ -437,56 +420,25 @@ export default function RunStory() {
                           <p className="text-sm text-gray-600">{section.description}</p>
                         </div>
                         <div className="flex gap-2">
-                          <button
+                          <StatusButton
+                            status="not_tested"
+                            currentStatus={sectionResults[section.id]?.status}
                             onClick={() => handleSectionStatusChange(test.id, section.id, "not_tested")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium ${
-                              !sectionResults[section.id]?.status || sectionResults[section.id]?.status === "not_tested"
-                                ? "bg-gray-500 text-white"
-                                : "text-gray-500 hover:text-gray-800"
-                            }`}
-                          >
-                            Not Tested
-                          </button>
-                          <button
+                          />
+                          <StatusButton
+                            status="passed"
+                            currentStatus={sectionResults[section.id]?.status}
                             onClick={() => handleSectionStatusChange(test.id, section.id, "passed")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium ${
-                              sectionResults[section.id]?.status === "passed"
-                                ? "bg-green-500 text-white"
-                                : "text-gray-500 hover:text-green-800"
-                            }`}
-                          >
-                            Passed
-                          </button>
-                          <button
+                          />
+                          <StatusButton
+                            status="failed"
+                            currentStatus={sectionResults[section.id]?.status}
                             onClick={() => handleSectionStatusChange(test.id, section.id, "failed")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium ${
-                              sectionResults[section.id]?.status === "failed"
-                                ? "bg-red-500 text-white"
-                                : "text-gray-500 hover:text-red-800"
-                            }`}
-                          >
-                            Failed
-                          </button>
-                          <button
+                          />
+                          <NoteButton
+                            isExpanded={expandedSectionNotes.has(`${test.id}-${section.id}`)}
                             onClick={() => toggleSectionNotes(test.id, section.id)}
-                            className="text-gray-500 hover:text-gray-700 text-sm font-medium flex items-center gap-1"
-                          >
-                            {expandedSectionNotes.has(`${test.id}-${section.id}`) ? (
-                              <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                </svg>
-                                Hide Notes
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                                Add Notes
-                              </>
-                            )}
-                          </button>
+                          />
                         </div>
                       </div>
 
@@ -611,26 +563,11 @@ export default function RunStory() {
                               );
                             }).reverse()}
                           {notes.length > INITIAL_NOTES_SHOWN && (
-                            <button
+                            <NoteButton
+                              isExpanded={expandedNotes.has(test.id)}
                               onClick={() => toggleNoteExpansion(test.id)}
-                              className="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
-                            >
-                              {expandedNotes.has(test.id) ? (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                  </svg>
-                                  Show Less
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                  Show More ({notes.length - INITIAL_NOTES_SHOWN} more)
-                                </>
-                              )}
-                            </button>
+                              count={notes.length - INITIAL_NOTES_SHOWN}
+                            />
                           )}
                         </div>
                       </div>

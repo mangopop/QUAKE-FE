@@ -1,7 +1,5 @@
 import React from 'react';
 import type { Owner } from '../../services/types';
-import DeleteIcon from '../common/DeleteIcon';
-import EditIcon from '../common/EditIcon';
 import ActionButtons from '../ActionButtons';
 
 interface DataCardProps {
