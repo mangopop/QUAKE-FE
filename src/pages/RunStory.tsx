@@ -148,8 +148,27 @@ export default function RunStory() {
         initialSectionResults[result.section.id] = result;
       });
       setSectionResults(initialSectionResults);
+    } else {
+      // If no section results, initialize all sections as "not_tested"
+      const initialSectionResults: Record<number, SectionResult> = {};
+      uniqueTests.forEach(test => {
+        test.sections.forEach(section => {
+          initialSectionResults[section.id] = {
+            id: 0,
+            status: "not_tested",
+            section: {
+              id: section.id,
+              name: section.name,
+              description: section.description
+            },
+            updatedAt: new Date().toISOString(),
+            notes: []
+          };
+        });
+      });
+      setSectionResults(initialSectionResults);
     }
-  }, [sectionResultsData]);
+  }, [sectionResultsData, uniqueTests]);
 
   const handleStatusChange = async (testId: number, status: TestStatus) => {
     if (!storyId) return;
@@ -421,7 +440,7 @@ export default function RunStory() {
                           <button
                             onClick={() => handleSectionStatusChange(test.id, section.id, "not_tested")}
                             className={`px-3 py-1 rounded-md text-sm font-medium ${
-                              sectionResults[section.id]?.status === "not_tested"
+                              !sectionResults[section.id]?.status || sectionResults[section.id]?.status === "not_tested"
                                 ? "bg-gray-500 text-white"
                                 : "text-gray-500 hover:text-gray-800"
                             }`}
