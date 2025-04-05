@@ -54,7 +54,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6">
+    <div className="px-6 pt-4 pb-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex space-x-2">
