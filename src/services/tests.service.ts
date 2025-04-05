@@ -8,7 +8,7 @@ const ENDPOINTS: BaseEndpoints = {
   search: '/api/tests/search',
 };
 
-const testsService = new BaseService<Test, CreateTestRequest>(ENDPOINTS, 'tests');
+const testsService = new BaseService<Test, CreateTestRequest, CreateTestRequest>(ENDPOINTS, 'tests');
 
 interface GetTestsParams extends BaseQueryParams {
   category?: string;

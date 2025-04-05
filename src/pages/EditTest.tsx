@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTest, useUpdateTest } from "../services/tests.service";
 import { useTemplates } from "../services/templates.service";
-import type { Test, CreateTestRequest } from "../services/types";
+import { useCategories } from "../services/categories.service";
+import type { Test, CreateTestRequest, Category, Template } from "../services/types";
 import FormInput from "../components/common/FormInput";
 import Button from "../components/common/Button";
 import SectionForm, { Section } from "../components/common/SectionForm";
@@ -12,12 +13,14 @@ export default function EditTest() {
   const navigate = useNavigate();
   const { data: test, isLoading: isLoadingTest } = useTest(testId || "0");
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
+  const { data: categories } = useCategories();
   const updateTest = useUpdateTest();
 
   const [formData, setFormData] = useState<CreateTestRequest>({
     name: "",
     templateId: undefined,
-    sections: [{ name: "", description: "" }]
+    sections: [{ name: "", description: "", orderIndex: 0 }],
+    categories: []
   });
 
   useEffect(() => {
@@ -25,7 +28,12 @@ export default function EditTest() {
       setFormData({
         name: test.name,
         templateId: test.templateId,
-        sections: test.sections?.length ? test.sections : [{ name: "", description: "" }]
+        sections: test.sections?.length ? test.sections.map(section => ({
+          name: section.name,
+          description: section.description,
+          orderIndex: section.orderIndex
+        })) : [{ name: "", description: "", orderIndex: 0 }],
+        categories: test.categories.map(cat => typeof cat === 'string' ? cat : cat.id.toString())
       });
     }
   }, [test]);
@@ -45,7 +53,7 @@ export default function EditTest() {
   const addSection = () => {
     setFormData(prev => ({
       ...prev,
-      sections: [...prev.sections, { name: "", description: "" }]
+      sections: [...prev.sections, { name: "", description: "", orderIndex: prev.sections.length }]
     }));
   };
 
@@ -62,8 +70,8 @@ export default function EditTest() {
     setFormData(prev => ({
       ...prev,
       sections: prev.sections.length > 1
-        ? prev.sections.filter((_, i) => i !== index)
-        : [{ name: "", description: "" }] // Keep at least one section
+        ? prev.sections.filter((_, i) => i !== index).map((section, i) => ({ ...section, orderIndex: i }))
+        : [{ name: "", description: "", orderIndex: 0 }]
     }));
   };
 
@@ -89,6 +97,37 @@ export default function EditTest() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
+            Categories
+          </label>
+          <div className="space-y-2">
+            {categories?.map((category: Category) => (
+              <label key={category.id} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.categories.includes(category.id.toString())}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData(prev => ({
+                        ...prev,
+                        categories: [...prev.categories, category.id.toString()]
+                      }));
+                    } else {
+                      setFormData(prev => ({
+                        ...prev,
+                        categories: prev.categories.filter(id => id !== category.id.toString())
+                      }));
+                    }
+                  }}
+                  className="rounded"
+                />
+                {category.name}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Template (Optional)
           </label>
           <select
@@ -97,7 +136,7 @@ export default function EditTest() {
             className="border p-2 rounded w-full"
           >
             <option value="">Select a template...</option>
-            {templates && templates.map((template) => (
+            {templates?.data?.map((template: Template) => (
               <option key={template.id} value={template.id}>
                 {template.name}
               </option>

@@ -95,7 +95,12 @@ export interface PaginatedTestsResponse {
 export interface CreateTestRequest {
   name: string;
   templateId?: string;
-  sections: Section[];
+  sections: {
+    name: string;
+    description: string;
+    orderIndex: number;
+  }[];
+  categories: string[];
 }
 
 // Auth Types

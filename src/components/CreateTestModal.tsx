@@ -64,7 +64,8 @@ export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProp
         sections: sections.map((section, index) => ({
           ...section,
           orderIndex: index
-        }))
+        })),
+        categories: selectedCategories
       };
       await createTest.mutateAsync(testData);
       onClose();
@@ -134,7 +135,7 @@ export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProp
             Categories
           </label>
           <div className="space-y-2">
-            {categories?.data?.map((category: Category) => (
+            {categories?.map((category: Category) => (
               <label key={category.id} className="flex items-center gap-2">
                 <input
                   type="checkbox"
