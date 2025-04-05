@@ -54,8 +54,10 @@ export interface Story {
 }
 
 export interface Section {
+  id: number;
   name: string;
   description: string;
+  orderIndex: number;
 }
 
 export interface Template {
@@ -119,4 +121,73 @@ export interface CreateTemplateRequest {
 export interface CreateStoryRequest {
   name: string;
   templateIds: number[];
+}
+
+export interface TestNotes {
+  id: number;
+  note: string;
+  createdAt: string;
+  createdBy: {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface SectionNote {
+  id: number;
+  note: string;
+  createdBy: {
+    id: number;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: string;
+}
+
+export interface SectionResult {
+  id: number;
+  section: {
+    id: number;
+    name: string;
+    description: string;
+  };
+  status: "not_tested" | "passed" | "failed";
+  updatedAt: string;
+  notes: SectionNote[];
+}
+
+export interface SectionResultsResponse {
+  section_results: SectionResult[];
+}
+
+export interface SectionNotesResponse {
+  notes: SectionNote[];
+}
+
+export interface TestResult {
+  id: number;
+  status: "not_tested" | "passed" | "failed";
+  notes: TestNotes[];
+  sectionResults: SectionResult[];
+  test: {
+    id: number;
+    name: string;
+    owner: {
+      id: number;
+      email: string;
+      firstName: string;
+      lastName: string;
+    };
+    notes: string | null;
+    categories: any[][];
+    sections: {
+      id: number;
+      name: string;
+      description: string;
+      orderIndex: number;
+    }[];
+    createdAt: string;
+  };
 }

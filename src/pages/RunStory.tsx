@@ -1,9 +1,20 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useStory, useUpdateStory, useTestsByTemplate, useUpdateTestResult, storiesService } from "../services/stories.service";
-import type { Story, Template, Test } from "../services/types";
+import {
+  useStory,
+  useUpdateStory,
+  useTestsByTemplate,
+  useUpdateTestResult,
+  useUpdateSectionResult,
+  useSectionResults,
+  useSectionNotes,
+  useAddSectionNote,
+  storiesService
+} from "../services/stories.service";
+import type { Story, Template, Test, SectionResult, SectionNote, Section } from "../services/types";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useQueryClient } from "@tanstack/react-query";
 
 type TestStatus = "not_tested" | "passed" | "failed";
 
@@ -23,6 +34,7 @@ interface TestResult {
   id: number;
   status: TestStatus;
   notes: TestNotes[];
+  sectionResults: SectionResult[];
   test: {
     id: number;
     name: string;
@@ -34,7 +46,7 @@ interface TestResult {
     };
     notes: string | null;
     categories: any[][];
-    sections: any[];
+    sections: Section[];
     createdAt: string;
   };
 }
@@ -49,6 +61,9 @@ export default function RunStory() {
   const navigate = useNavigate();
   const { data: story, isLoading: isLoadingStory } = useStory(storyId || "");
   const updateTestResult = useUpdateTestResult();
+  const updateSectionResult = useUpdateSectionResult();
+  const { data: sectionResultsData } = useSectionResults(storyId || "");
+  const addSectionNote = useAddSectionNote();
   const [testStatuses, setTestStatuses] = useState<Record<number, TestStatus>>({});
   const [notes, setNotes] = useState<Record<number, CurrentNote>>({});
   const [uniqueTests, setUniqueTests] = useState<Test[]>([]);
@@ -58,6 +73,11 @@ export default function RunStory() {
   const [newNote, setNewNote] = useState<Record<number, string>>({});
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
   const [expandedLongNotes, setExpandedLongNotes] = useState<Set<string>>(new Set());
+  const [sectionResults, setSectionResults] = useState<Record<number, SectionResult>>({});
+  const [sectionNotes, setSectionNotes] = useState<Record<number, Record<number, string>>>({});
+  const [dirtySectionNotes, setDirtySectionNotes] = useState<Set<string>>(new Set());
+  const [expandedSectionNotes, setExpandedSectionNotes] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
   const INITIAL_NOTES_SHOWN = 2;
   const MAX_LINES_BEFORE_COLLAPSE = 20;
@@ -120,6 +140,17 @@ export default function RunStory() {
     }
   }, [story, uniqueTests]);
 
+  // Initialize section results from API
+  useEffect(() => {
+    if (sectionResultsData?.section_results) {
+      const initialSectionResults: Record<number, SectionResult> = {};
+      sectionResultsData.section_results.forEach((result) => {
+        initialSectionResults[result.section.id] = result;
+      });
+      setSectionResults(initialSectionResults);
+    }
+  }, [sectionResultsData]);
+
   const handleStatusChange = async (testId: number, status: TestStatus) => {
     if (!storyId) return;
 
@@ -142,6 +173,30 @@ export default function RunStory() {
       });
     } catch (error) {
       console.error('Failed to update test status:', error);
+    }
+  };
+
+  const handleSectionStatusChange = async (testId: number, sectionId: number, status: "not_tested" | "passed" | "failed") => {
+    if (!storyId) return;
+
+    try {
+      const updatedResult = await updateSectionResult.mutateAsync({
+        storyId,
+        sectionId,
+        data: { status }
+      });
+
+      // Update local state with the new result
+      setSectionResults(prev => ({
+        ...prev,
+        [sectionId]: updatedResult
+      }));
+
+      // The backend will handle updating the test status based on section results
+      // We can refetch the story data to get the updated test status
+      await queryClient.invalidateQueries({ queryKey: ['story', storyId] });
+    } catch (error) {
+      console.error('Failed to update section status:', error);
     }
   };
 
@@ -180,6 +235,40 @@ export default function RunStory() {
     }
   };
 
+  const handleSectionNotesChange = (testId: number, sectionId: number, value: string) => {
+    setSectionNotes(prev => ({
+      ...prev,
+      [testId]: {
+        ...prev[testId],
+        [sectionId]: value
+      }
+    }));
+    setDirtySectionNotes(prev => new Set(prev).add(`${testId}-${sectionId}`));
+  };
+
+  const handleSaveSectionNotes = async (testId: number, sectionId: number) => {
+    if (!storyId || !sectionNotes[testId]?.[sectionId]?.trim()) return;
+
+    try {
+      await addSectionNote.mutateAsync({
+        storyId,
+        sectionId,
+        data: { note: sectionNotes[testId][sectionId] }
+      });
+
+      // Clear the note input after successful save
+      setSectionNotes(prev => ({
+        ...prev,
+        [testId]: {
+          ...prev[testId],
+          [sectionId]: ''
+        }
+      }));
+    } catch (error) {
+      console.error('Failed to save section notes:', error);
+    }
+  };
+
   const toggleTestExpansion = (testId: number) => {
     setExpandedTestId(expandedTestId === testId ? null : testId);
   };
@@ -203,6 +292,19 @@ export default function RunStory() {
         newSet.delete(noteId);
       } else {
         newSet.add(noteId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSectionNotes = (testId: number, sectionId: number) => {
+    const key = `${testId}-${sectionId}`;
+    setExpandedSectionNotes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
       }
       return newSet;
     });
@@ -277,194 +379,275 @@ export default function RunStory() {
           </div>
         )}
 
-        <div className="space-y-2">
-          {uniqueTests.map(test => (
-            <div key={test.id} className="bg-white border rounded-lg shadow-sm">
-              <div className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold">{test.name}</h3>
-                      <span className="text-sm text-gray-500">
-                        {test.sections?.length || 0} sections
-                      </span>
-                      {test.categories && test.categories.length > 0 && (
-                        <div className="flex gap-1">
-                          {test.categories.map((category, index) => (
-                            <span key={index} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                              {typeof category === 'string' ? category : category.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                        onClick={() => handleStatusChange(test.id, 'not_tested')}
-                        className={`px-3 py-1 rounded-md text-sm font-medium ${
-                          testStatuses[test.id] === 'not_tested'
-                            ? 'bg-gray-500 text-white'
-                            : 'text-gray-500 hover:text-gray-800'
-                        }`}
-                      >
-                        Not Tested
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(test.id, 'passed')}
-                        className={`px-3 py-1 rounded-md text-sm font-medium ${
-                          testStatuses[test.id] === 'passed'
-                            ? 'bg-green-500 text-white'
-                            : 'text-gray-500 hover:text-green-800'
-                        }`}
-                      >
-                        Passed
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(test.id, 'failed')}
-                        className={`px-3 py-1 rounded-md text-sm font-medium ${
-                          testStatuses[test.id] === 'failed'
-                            ? 'bg-red-500 text-white'
-                            : 'text-gray-500 hover:text-red-800'
-                        }`}
-                      >
-                        Failed
-                      </button>
-                  </div>
+        <div className="space-y-4">
+          {uniqueTests.map((test) => (
+            <div key={test.id} className="bg-white p-6 rounded-lg shadow-sm border">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">{test.name}</h3>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleStatusChange(test.id, "passed")}
+                    className={`px-3 py-1 rounded ${
+                      testStatuses[test.id] === "passed"
+                        ? "bg-green-500 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    Pass
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(test.id, "failed")}
+                    className={`px-3 py-1 rounded ${
+                      testStatuses[test.id] === "failed"
+                        ? "bg-red-500 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    Fail
+                  </button>
                 </div>
+              </div>
 
-                <div className="mt-3">
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <textarea
-                          value={newNote[test.id] || ""}
-                          onChange={(e) => {
-                            handleNotesChange(test.id, e.target.value);
-                            setDirtyNotes(prev => new Set(prev).add(test.id));
-                          }}
-                          className="w-full border rounded p-2 text-sm bg-white text-black"
-                          rows={3}
-                          placeholder="Add a new note..."
-                        />
-                        <div className="flex justify-end mt-2">
+              {test.sections && test.sections.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {test.sections.map((section) => (
+                    <div key={section.id} className="bg-gray-50 p-4 rounded">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-medium">{section.name}</h4>
+                          <p className="text-sm text-gray-600">{section.description}</p>
+                        </div>
+                        <div className="flex gap-2">
                           <button
-                            onClick={() => handleSaveNotes(test.id)}
-                            disabled={!newNote[test.id]?.trim()}
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => handleSectionStatusChange(test.id, section.id, "not_tested")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium ${
+                              sectionResults[section.id]?.status === "not_tested"
+                                ? "bg-gray-500 text-white"
+                                : "text-gray-500 hover:text-gray-800"
+                            }`}
                           >
-                            Save Note
+                            Not Tested
+                          </button>
+                          <button
+                            onClick={() => handleSectionStatusChange(test.id, section.id, "passed")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium ${
+                              sectionResults[section.id]?.status === "passed"
+                                ? "bg-green-500 text-white"
+                                : "text-gray-500 hover:text-green-800"
+                            }`}
+                          >
+                            Passed
+                          </button>
+                          <button
+                            onClick={() => handleSectionStatusChange(test.id, section.id, "failed")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium ${
+                              sectionResults[section.id]?.status === "failed"
+                                ? "bg-red-500 text-white"
+                                : "text-gray-500 hover:text-red-800"
+                            }`}
+                          >
+                            Failed
+                          </button>
+                          <button
+                            onClick={() => toggleSectionNotes(test.id, section.id)}
+                            className="text-gray-500 hover:text-gray-700 text-sm font-medium flex items-center gap-1"
+                          >
+                            {expandedSectionNotes.has(`${test.id}-${section.id}`) ? (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                </svg>
+                                Hide Notes
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                                Add Notes
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
-                    </div>
 
-                    {(() => {
-                      const testResult = story?.testResults?.find(r => r.test.id === test.id) as TestResult | undefined;
-                      const notes = testResult?.notes || [];
+                      {expandedSectionNotes.has(`${test.id}-${section.id}`) && (
+                        <div className="mt-3">
+                          <div className="space-y-3">
+                            <div className="flex gap-2">
+                              <div className="flex-1">
+                                <textarea
+                                  value={sectionNotes[test.id]?.[section.id] || ""}
+                                  onChange={(e) => handleSectionNotesChange(test.id, section.id, e.target.value)}
+                                  className="w-full border rounded p-2 text-sm bg-white text-black"
+                                  rows={3}
+                                  placeholder="Add notes for this section..."
+                                />
+                                <div className="flex justify-end mt-2">
+                                  <button
+                                    onClick={() => handleSaveSectionNotes(test.id, section.id)}
+                                    disabled={!sectionNotes[test.id]?.[section.id]?.trim()}
+                                    className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    Save Notes
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
 
-                      return notes.length > 0 ? (
-                        <div className="space-y-2">
-                          <div className="text-sm text-gray-700 font-medium">History:</div>
-                          <div className="space-y-2">
-                            {notes
-                              .slice(0, expandedNotes.has(test.id) ? undefined : INITIAL_NOTES_SHOWN)
-                              .map((historyItem) => {
-                                const noteId = `${test.id}-${historyItem.id}-${historyItem.createdAt}`;
-                                const lines = historyItem.note.split('\n');
-                                const isLongNote = lines.length > MAX_LINES_BEFORE_COLLAPSE;
-
-                                return (
-                                  <div key={historyItem.id} className="bg-gray-50 rounded p-2 text-sm">
+                            {sectionResults[section.id]?.notes && sectionResults[section.id].notes.length > 0 && (
+                              <div className="space-y-2">
+                                {sectionResults[section.id].notes.map((note) => (
+                                  <div key={note.id} className="bg-gray-50 rounded p-2 text-sm">
                                     <div className="text-gray-500 text-xs mb-1">
-                                      {new Date(historyItem.createdAt).toLocaleString()} by {historyItem.createdBy.firstName} {historyItem.createdBy.lastName}
+                                      {new Date(note.createdAt).toLocaleString()} by {note.createdBy.firstName} {note.createdBy.lastName}
                                     </div>
                                     <div className="whitespace-pre-wrap">
-                                      {formatNote(historyItem.note, noteId)}
+                                      {note.note}
                                     </div>
-                                    {isLongNote && (
-                                      <button
-                                        onClick={() => toggleLongNoteExpansion(noteId)}
-                                        className="mt-1 text-blue-500 hover:text-blue-600 text-xs font-medium flex items-center gap-1"
-                                      >
-                                        {expandedLongNotes.has(noteId) ? (
-                                          <>
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                            </svg>
-                                            Show Less
-                                          </>
-                                        ) : (
-                                          <>
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                            Show More ({lines.length - MAX_LINES_BEFORE_COLLAPSE} more lines)
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
                                   </div>
-                                );
-                              }).reverse()}
-                            {notes.length > INITIAL_NOTES_SHOWN && (
-                              <button
-                                onClick={() => toggleNoteExpansion(test.id)}
-                                className="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
-                              >
-                                {expandedNotes.has(test.id) ? (
-                                  <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                    </svg>
-                                    Show Less
-                                  </>
-                                ) : (
-                                  <>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                    Show More ({notes.length - INITIAL_NOTES_SHOWN} more)
-                                  </>
-                                )}
-                              </button>
+                                ))}
+                              </div>
                             )}
                           </div>
                         </div>
-                      ) : null;
-                    })()}
-
-                    {notes[test.id]?.code !== undefined && (
-                      <div className="relative">
-                        <div className="text-sm text-gray-700 font-medium mb-1">Test Code:</div>
-                        <textarea
-                          value={notes[test.id]?.code || ""}
-                          onChange={(e) => setNotes(prev => ({
-                            ...prev,
-                            [test.id]: { ...notes[test.id], code: e.target.value }
-                          }))}
-                          className="w-full border rounded p-2 text-sm font-mono bg-[#1E1E1E] text-white"
-                          rows={6}
-                          placeholder="Add test code here..."
-                        />
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
+              )}
 
-                {expandedTestId === test.id && (
-                  <div className="mt-3 space-y-2">
-                    {test.sections?.map((section, index) => (
-                      <div key={index} className="bg-gray-50 rounded p-2">
-                        <h4 className="font-medium text-sm">{section.name}</h4>
-                        {section.description && (
-                          <p className="text-sm text-gray-600">{section.description}</p>
-                        )}
+              <div className="mt-3">
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <textarea
+                        value={newNote[test.id] || ""}
+                        onChange={(e) => {
+                          handleNotesChange(test.id, e.target.value);
+                          setDirtyNotes(prev => new Set(prev).add(test.id));
+                        }}
+                        className="w-full border rounded p-2 text-sm bg-white text-black"
+                        rows={3}
+                        placeholder="Add a new note..."
+                      />
+                      <div className="flex justify-end mt-2">
+                        <button
+                          onClick={() => handleSaveNotes(test.id)}
+                          disabled={!newNote[test.id]?.trim()}
+                          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Save Note
+                        </button>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                )}
+
+                  {(() => {
+                    const testResult = story?.testResults?.find(r => r.test.id === test.id) as TestResult | undefined;
+                    const notes = testResult?.notes || [];
+
+                    return notes.length > 0 ? (
+                      <div className="space-y-2">
+                        <div className="text-sm text-gray-700 font-medium">History:</div>
+                        <div className="space-y-2">
+                          {notes
+                            .slice(0, expandedNotes.has(test.id) ? undefined : INITIAL_NOTES_SHOWN)
+                            .map((historyItem) => {
+                              const noteId = `${test.id}-${historyItem.id}-${historyItem.createdAt}`;
+                              const lines = historyItem.note.split('\n');
+                              const isLongNote = lines.length > MAX_LINES_BEFORE_COLLAPSE;
+
+                              return (
+                                <div key={historyItem.id} className="bg-gray-50 rounded p-2 text-sm">
+                                  <div className="text-gray-500 text-xs mb-1">
+                                    {new Date(historyItem.createdAt).toLocaleString()} by {historyItem.createdBy.firstName} {historyItem.createdBy.lastName}
+                                  </div>
+                                  <div className="whitespace-pre-wrap">
+                                    {formatNote(historyItem.note, noteId)}
+                                  </div>
+                                  {isLongNote && (
+                                    <button
+                                      onClick={() => toggleLongNoteExpansion(noteId)}
+                                      className="mt-1 text-blue-500 hover:text-blue-600 text-xs font-medium flex items-center gap-1"
+                                    >
+                                      {expandedLongNotes.has(noteId) ? (
+                                        <>
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                          </svg>
+                                          Show Less
+                                        </>
+                                      ) : (
+                                        <>
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                          </svg>
+                                          Show More ({lines.length - MAX_LINES_BEFORE_COLLAPSE} more lines)
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            }).reverse()}
+                          {notes.length > INITIAL_NOTES_SHOWN && (
+                            <button
+                              onClick={() => toggleNoteExpansion(test.id)}
+                              className="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
+                            >
+                              {expandedNotes.has(test.id) ? (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                  </svg>
+                                  Show Less
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                  Show More ({notes.length - INITIAL_NOTES_SHOWN} more)
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
+                  {notes[test.id]?.code !== undefined && (
+                    <div className="relative">
+                      <div className="text-sm text-gray-700 font-medium mb-1">Test Code:</div>
+                      <textarea
+                        value={notes[test.id]?.code || ""}
+                        onChange={(e) => setNotes(prev => ({
+                          ...prev,
+                          [test.id]: { ...notes[test.id], code: e.target.value }
+                        }))}
+                        className="w-full border rounded p-2 text-sm font-mono bg-[#1E1E1E] text-white"
+                        rows={6}
+                        placeholder="Add test code here..."
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {expandedTestId === test.id && (
+                <div className="mt-3 space-y-2">
+                  {test.sections?.map((section, index) => (
+                    <div key={index} className="bg-gray-50 rounded p-2">
+                      <h4 className="font-medium text-sm">{section.name}</h4>
+                      {section.description && (
+                        <p className="text-sm text-gray-600">{section.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
