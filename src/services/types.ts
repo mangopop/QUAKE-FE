@@ -39,6 +39,7 @@ export interface Story {
   owner: Owner;
   templates: Template[];
   templateIds?: number[];
+  categories: (string | Category)[];
   testResults: {
     id: number;
     status: "not_tested" | "passed" | "failed";
@@ -126,6 +127,13 @@ export interface CreateTemplateRequest {
 export interface CreateStoryRequest {
   name: string;
   templateIds: number[];
+  categoryIds: number[];
+}
+
+export interface UpdateStoryRequest {
+  name: string;
+  templateIds: number[];
+  categoryIds: number[];
 }
 
 export interface TestNotes {

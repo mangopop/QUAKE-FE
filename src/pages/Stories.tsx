@@ -1,22 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStories, useCreateStory, useDeleteStory, useTemplates } from "../services/stories.service";
-import type { Story } from "../services/types";
+import { useCategories } from "../services/categories.service";
+import type { Story, CreateStoryRequest, Category } from "../services/types";
 import CreateStoryModal from "../components/CreateStoryModal";
 import Card from "../components/Card";
 import PageHeader from "../components/PageHeader";
 import SearchInput from "../components/SearchInput";
+import Select from "../components/Select";
 
 export default function Stories() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const { data: stories, isLoading: isLoadingStories } = useStories();
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
+  const { data: categories, isLoading: isLoadingCategories } = useCategories();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const createStory = useCreateStory();
   const deleteStory = useDeleteStory();
   const navigate = useNavigate();
 
-  // Calculate test results for a story
   const getTestResults = (story: Story) => {
     if (!story.testResults || story.testResults.length === 0) {
       return { passed: 0, total: 0, percentage: 0 };
@@ -33,30 +36,36 @@ export default function Stories() {
     return templates?.find(t => t.id === templateId);
   };
 
-  const handleCreateStory = async (story: { name: string; templateIds: number[] }) => {
+  const handleCreateStory = async (story: CreateStoryRequest) => {
     try {
       await createStory.mutateAsync(story);
       setIsCreateModalOpen(false);
     } catch (error) {
-      console.error('Failed to create story:', error);
+      console.error("Failed to create story:", error);
     }
   };
 
-  const handleDeleteStory = async (id: number) => {
+  const handleDeleteStory = async (id: string) => {
     try {
-      await deleteStory.mutateAsync(id.toString());
+      await deleteStory.mutateAsync(id);
     } catch (error) {
-      console.error('Failed to delete story:', error);
+      console.error("Failed to delete story:", error);
     }
   };
 
-  if (isLoadingStories || isLoadingTemplates) {
+  if (isLoadingStories || isLoadingTemplates || isLoadingCategories) {
     return <div>Loading...</div>;
   }
 
-  const filteredStories = (stories || []).filter(story =>
-    story.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredStories = stories?.filter(story => {
+    const matchesSearch = story.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = !selectedCategory ||
+      story.categories.some(category => {
+        const categoryId = typeof category === 'string' ? parseInt(category) : category.id;
+        return categoryId === selectedCategory;
+      });
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="p-4">
@@ -66,36 +75,44 @@ export default function Stories() {
         newButtonText="New Story"
       />
 
-      <SearchInput
-        value={searchQuery}
-        onChange={setSearchQuery}
-        placeholder="Search stories..."
-      />
-
-      <CreateStoryModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateStory}
-        isSubmitting={createStory.isPending}
-      />
+      <div className="mb-6">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search stories..."
+            />
+          </div>
+          <div className="w-48">
+            <Select
+              value={selectedCategory?.toString() || ""}
+              onChange={(value: string) => setSelectedCategory(value ? parseInt(value) : null)}
+              options={[
+                { value: "", label: "All Categories" },
+                ...(categories || []).map(category => ({
+                  value: category.id.toString(),
+                  label: category.name
+                }))
+              ]}
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredStories.map((story) => {
+        {filteredStories?.map((story) => {
           const results = getTestResults(story);
           return (
             <Card
               key={story.id}
               title={story.name}
-              owner={story.owner}
               onEdit={() => navigate(`/stories/${story.id}/edit`)}
-              onDelete={() => handleDeleteStory(story.id)}
+              onDelete={() => handleDeleteStory(story.id.toString())}
               metadata={[
+                { label: "templates", value: story.templates.length },
                 {
-                  label: "templates",
-                  value: story.templates.length
-                },
-                {
-                  label: "tests passed",
+                  label: "test results",
                   value: `${results.passed}/${results.total}`,
                   className: results.total > 0 ? (
                     results.percentage >= 80 ? "text-green-600" :
@@ -111,12 +128,6 @@ export default function Stories() {
                             "text-red-600"
                 }] : [])
               ]}
-              tags={results.total > 0 && results.percentage === 100 ? [
-                {
-                  text: "PASSED",
-                  className: "bg-green-100 text-green-800 border border-green-200 font-semibold"
-                }
-              ] : undefined}
               actionButton={{
                 label: "Run",
                 onClick: () => navigate(`/stories/${story.id}/run`),
@@ -149,6 +160,13 @@ export default function Stories() {
           );
         })}
       </div>
+
+      <CreateStoryModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateStory}
+        isSubmitting={createStory.isPending}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
-import type { ApiResponse, Story, CreateStoryRequest, Test, Template, SectionResultsResponse, SectionResult, SectionNotesResponse, SectionNote } from './types';
+import type { Story, CreateStoryRequest, UpdateStoryRequest, Test, Template, SectionResultsResponse, SectionResult, SectionNotesResponse, SectionNote } from './types';
 
 const ENDPOINTS = {
   stories: '/api/stories',
@@ -42,7 +42,7 @@ export const storiesService = {
     return response.data;
   },
 
-  update: async (id: string, data: Partial<Story>) => {
+  update: async (id: string, data: UpdateStoryRequest) => {
     const response = await apiClient.put<Story>(ENDPOINTS.story(id), data);
     return response.data;
   },
@@ -141,7 +141,7 @@ export const useUpdateStory = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Story> }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateStoryRequest }) =>
       storiesService.update(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stories });

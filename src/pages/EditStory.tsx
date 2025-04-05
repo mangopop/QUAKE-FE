@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useStory, useUpdateStory, useTemplates } from "../services/stories.service";
-import type { Story, Template } from "../services/types";
+import { useCategories } from "../services/categories.service";
+import type { Story, Template, Category, UpdateStoryRequest } from "../services/types";
 
 export default function EditStory() {
   const { storyId } = useParams<{ storyId: string }>();
   const navigate = useNavigate();
   const { data: story, isLoading: isLoadingStory } = useStory(storyId || "");
   const { data: availableTemplates, isLoading: isLoadingTemplates } = useTemplates();
+  const { data: categories, isLoading: isLoadingCategories } = useCategories();
   const updateStory = useUpdateStory();
   const [editedStory, setEditedStory] = useState<Story | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
@@ -31,11 +33,11 @@ export default function EditStory() {
     }
   }, [availableTemplates]);
 
-  if (isLoadingStory || isLoadingTemplates) {
+  if (isLoadingStory || isLoadingTemplates || isLoadingCategories) {
     return <div className="p-4">Loading story details...</div>;
   }
 
-  if (!story || !editedStory || !availableTemplates) {
+  if (!story || !editedStory || !availableTemplates || !categories) {
     return <div className="p-4">Story not found</div>;
   }
 
@@ -43,12 +45,16 @@ export default function EditStory() {
     if (!storyId) return;
 
     try {
+      const updateData: UpdateStoryRequest = {
+        name: editedStory.name,
+        templateIds: editedStory.templates.map(template => template.id),
+        categoryIds: editedStory.categories.map(cat =>
+          typeof cat === 'string' ? parseInt(cat) : cat.id
+        )
+      };
       await updateStory.mutateAsync({
         id: storyId,
-        data: {
-          name: editedStory.name,
-          templateIds: editedStory.templates.map(template => template.id)
-        }
+        data: updateData
       });
       navigate('/stories');
     } catch (error) {
@@ -60,6 +66,26 @@ export default function EditStory() {
     setEditedStory({
       ...editedStory,
       name: e.target.value
+    });
+  };
+
+  const handleCategoryToggle = (categoryId: number) => {
+    setEditedStory(prev => {
+      if (!prev) return prev;
+
+      const currentCategories = prev.categories || [];
+      const categoryExists = currentCategories.some(cat =>
+        (typeof cat === 'string' ? cat : cat.id.toString()) === categoryId.toString()
+      );
+
+      return {
+        ...prev,
+        categories: categoryExists
+          ? currentCategories.filter(cat =>
+              (typeof cat === 'string' ? cat : cat.id.toString()) !== categoryId.toString()
+            )
+          : [...currentCategories, categories.find(c => c.id === categoryId)!]
+      };
     });
   };
 
@@ -126,6 +152,27 @@ export default function EditStory() {
                 className="w-full border rounded p-2"
                 placeholder="Enter story name"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Categories
+              </label>
+              <div className="space-y-2">
+                {categories.map((category: Category) => (
+                  <label key={category.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editedStory.categories?.some(cat =>
+                        (typeof cat === 'string' ? cat : cat.id.toString()) === category.id.toString()
+                      )}
+                      onChange={() => handleCategoryToggle(category.id)}
+                      className="rounded"
+                    />
+                    {category.name}
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div>

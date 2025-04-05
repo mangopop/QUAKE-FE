@@ -14,9 +14,8 @@ export const queryKeys = {
 
 export const categoriesService = {
   getAll: async () => {
-    const response = await apiClient.get<ApiResponse<Category[]>>(ENDPOINTS.categories);
-    console.log('Categories API response:', response);
-    return response.data.data;
+    const response = await apiClient.get<Category[]>(ENDPOINTS.categories);
+    return response.data;
   },
 
   getById: async (id: string) => {
