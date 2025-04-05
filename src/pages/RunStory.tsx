@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import StatusButton from '../components/common/StatusButton';
 import NoteButton from '../components/common/NoteButton';
 import BackButton from '../components/common/BackButton';
+import NotesSection from '../components/common/NotesSection';
 
 type TestStatus = "not_tested" | "passed" | "failed";
 
@@ -229,8 +230,8 @@ export default function RunStory() {
     }));
   };
 
-  const handleSaveNotes = async (testId: number) => {
-    if (!storyId || !newNote[testId]?.trim()) return;
+  const handleSaveNotes = async (testId: number, note: string) => {
+    if (!storyId || !note.trim()) return;
 
     try {
       await updateTestResult.mutateAsync({
@@ -238,7 +239,7 @@ export default function RunStory() {
         testId,
         data: {
           status: testStatuses[testId] || "not_tested",
-          notes: newNote[testId]
+          notes: note
         }
       });
 
@@ -268,14 +269,14 @@ export default function RunStory() {
     setDirtySectionNotes(prev => new Set(prev).add(`${testId}-${sectionId}`));
   };
 
-  const handleSaveSectionNotes = async (testId: number, sectionId: number) => {
-    if (!storyId || !sectionNotes[testId]?.[sectionId]?.trim()) return;
+  const handleSaveSectionNotes = async (testId: number, sectionId: number, note: string) => {
+    if (!storyId || !note.trim()) return;
 
     try {
       await addSectionNote.mutateAsync({
         storyId,
         sectionId,
-        data: { note: sectionNotes[testId][sectionId] }
+        data: { note }
       });
 
       // Clear the note input after successful save
@@ -444,43 +445,12 @@ export default function RunStory() {
 
                       {expandedSectionNotes.has(`${test.id}-${section.id}`) && (
                         <div className="mt-3">
-                          <div className="space-y-3">
-                            <div className="flex gap-2">
-                              <div className="flex-1">
-                                <textarea
-                                  value={sectionNotes[test.id]?.[section.id] || ""}
-                                  onChange={(e) => handleSectionNotesChange(test.id, section.id, e.target.value)}
-                                  className="w-full border rounded p-2 text-sm bg-white text-black"
-                                  rows={3}
-                                  placeholder="Add notes for this section..."
-                                />
-                                <div className="flex justify-end mt-2">
-                                  <button
-                                    onClick={() => handleSaveSectionNotes(test.id, section.id)}
-                                    disabled={!sectionNotes[test.id]?.[section.id]?.trim()}
-                                    className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    Save Notes
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            {sectionResults[section.id]?.notes && sectionResults[section.id].notes.length > 0 && (
-                              <div className="space-y-2">
-                                {sectionResults[section.id].notes.map((note) => (
-                                  <div key={note.id} className="bg-gray-50 rounded p-2 text-sm">
-                                    <div className="text-gray-500 text-xs mb-1">
-                                      {new Date(note.createdAt).toLocaleString()} by {note.createdBy.firstName} {note.createdBy.lastName}
-                                    </div>
-                                    <div className="whitespace-pre-wrap">
-                                      {note.note}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                          <NotesSection
+                            notes={sectionResults[section.id]?.notes || []}
+                            onSaveNote={(note) => handleSaveSectionNotes(test.id, section.id, note)}
+                            initialNotesShown={INITIAL_NOTES_SHOWN}
+                            maxLinesBeforeCollapse={MAX_LINES_BEFORE_COLLAPSE}
+                          />
                         </div>
                       )}
                     </div>
@@ -489,107 +459,15 @@ export default function RunStory() {
               )}
 
               <div className="mt-3">
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <textarea
-                        value={newNote[test.id] || ""}
-                        onChange={(e) => {
-                          handleNotesChange(test.id, e.target.value);
-                          setDirtyNotes(prev => new Set(prev).add(test.id));
-                        }}
-                        className="w-full border rounded p-2 text-sm bg-white text-black"
-                        rows={3}
-                        placeholder="Add a new note..."
-                      />
-                      <div className="flex justify-end mt-2">
-                        <button
-                          onClick={() => handleSaveNotes(test.id)}
-                          disabled={!newNote[test.id]?.trim()}
-                          className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Save Note
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {(() => {
+                <NotesSection
+                  notes={(() => {
                     const testResult = story?.testResults?.find(r => r.test.id === test.id) as TestResult | undefined;
-                    const notes = testResult?.notes || [];
-
-                    return notes.length > 0 ? (
-                      <div className="space-y-2">
-                        <div className="text-sm text-gray-700 font-medium">History:</div>
-                        <div className="space-y-2">
-                          {notes
-                            .slice(0, expandedNotes.has(test.id) ? undefined : INITIAL_NOTES_SHOWN)
-                            .map((historyItem) => {
-                              const noteId = `${test.id}-${historyItem.id}-${historyItem.createdAt}`;
-                              const lines = historyItem.note.split('\n');
-                              const isLongNote = lines.length > MAX_LINES_BEFORE_COLLAPSE;
-
-                              return (
-                                <div key={historyItem.id} className="bg-gray-50 rounded p-2 text-sm">
-                                  <div className="text-gray-500 text-xs mb-1">
-                                    {new Date(historyItem.createdAt).toLocaleString()} by {historyItem.createdBy.firstName} {historyItem.createdBy.lastName}
-                                  </div>
-                                  <div className="whitespace-pre-wrap">
-                                    {formatNote(historyItem.note, noteId)}
-                                  </div>
-                                  {isLongNote && (
-                                    <button
-                                      onClick={() => toggleLongNoteExpansion(noteId)}
-                                      className="mt-1 text-blue-500 hover:text-blue-600 text-xs font-medium flex items-center gap-1"
-                                    >
-                                      {expandedLongNotes.has(noteId) ? (
-                                        <>
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                          </svg>
-                                          Show Less
-                                        </>
-                                      ) : (
-                                        <>
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                          </svg>
-                                          Show More ({lines.length - MAX_LINES_BEFORE_COLLAPSE} more lines)
-                                        </>
-                                      )}
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            }).reverse()}
-                          {notes.length > INITIAL_NOTES_SHOWN && (
-                            <NoteButton
-                              isExpanded={expandedNotes.has(test.id)}
-                              onClick={() => toggleNoteExpansion(test.id)}
-                              count={notes.length - INITIAL_NOTES_SHOWN}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    ) : null;
+                    return testResult?.notes || [];
                   })()}
-
-                  {notes[test.id]?.code !== undefined && (
-                    <div className="relative">
-                      <div className="text-sm text-gray-700 font-medium mb-1">Test Code:</div>
-                      <textarea
-                        value={notes[test.id]?.code || ""}
-                        onChange={(e) => setNotes(prev => ({
-                          ...prev,
-                          [test.id]: { ...notes[test.id], code: e.target.value }
-                        }))}
-                        className="w-full border rounded p-2 text-sm font-mono bg-[#1E1E1E] text-white"
-                        rows={6}
-                        placeholder="Add test code here..."
-                      />
-                    </div>
-                  )}
-                </div>
+                  onSaveNote={(note) => handleSaveNotes(test.id, note)}
+                  initialNotesShown={INITIAL_NOTES_SHOWN}
+                  maxLinesBeforeCollapse={MAX_LINES_BEFORE_COLLAPSE}
+                />
               </div>
 
               {expandedTestId === test.id && (
