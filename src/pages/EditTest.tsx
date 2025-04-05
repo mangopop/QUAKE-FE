@@ -5,7 +5,9 @@ import { useTemplates } from "../services/templates.service";
 import { useCategories } from "../services/categories.service";
 import type { Test, CreateTestRequest, Category, Template } from "../services/types";
 import FormInput from "../components/common/FormInput";
-import Button from "../components/common/Button";
+import FormCheckboxGroup from "../components/common/FormCheckboxGroup";
+import FormSelect from "../components/common/FormSelect";
+import ButtonGroup from "../components/common/ButtonGroup";
 import SectionForm, { Section } from "../components/common/SectionForm";
 
 export default function EditTest() {
@@ -95,54 +97,26 @@ export default function EditTest() {
           required
         />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Categories
-          </label>
-          <div className="space-y-2">
-            {categories?.map((category: Category) => (
-              <label key={category.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.categories.includes(category.id.toString())}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFormData(prev => ({
-                        ...prev,
-                        categories: [...prev.categories, category.id.toString()]
-                      }));
-                    } else {
-                      setFormData(prev => ({
-                        ...prev,
-                        categories: prev.categories.filter(id => id !== category.id.toString())
-                      }));
-                    }
-                  }}
-                  className="rounded"
-                />
-                {category.name}
-              </label>
-            ))}
-          </div>
-        </div>
+        <FormCheckboxGroup
+          label="Categories"
+          options={categories?.map(category => ({
+            id: category.id.toString(),
+            label: category.name
+          })) || []}
+          selectedValues={formData.categories}
+          onChange={(selectedIds) => setFormData(prev => ({ ...prev, categories: selectedIds }))}
+        />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Template (Optional)
-          </label>
-          <select
-            value={formData.templateId || ""}
-            onChange={(e) => setFormData(prev => ({ ...prev, templateId: e.target.value ? e.target.value : undefined }))}
-            className="border p-2 rounded w-full"
-          >
-            <option value="">Select a template...</option>
-            {templates?.data?.map((template: Template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          label="Template (Optional)"
+          value={formData.templateId || ""}
+          onChange={(value) => setFormData(prev => ({ ...prev, templateId: value || undefined }))}
+          options={templates?.data?.map(template => ({
+            value: template.id.toString(),
+            label: template.name
+          })) || []}
+          placeholder="Select a template..."
+        />
 
         <SectionForm
           sections={formData.sections}
@@ -151,20 +125,12 @@ export default function EditTest() {
           onUpdateSection={updateSection}
         />
 
-        <div className="flex justify-end gap-4">
-          <Button
-            onClick={() => navigate("/tests")}
-            variant="secondary"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={updateTest.isPending}
-          >
-            {updateTest.isPending ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
+        <ButtonGroup
+          onSubmit={handleSubmit}
+          onCancel={() => navigate("/tests")}
+          submitText={updateTest.isPending ? 'Saving...' : 'Save Changes'}
+          isSubmitDisabled={updateTest.isPending}
+        />
       </form>
     </div>
   );

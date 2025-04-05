@@ -4,7 +4,8 @@ import { useCategories } from "../services/categories.service";
 import type { CreateTestRequest, Category } from "../services/types";
 import Modal from "./common/Modal";
 import FormInput from "./common/FormInput";
-import Button from "./common/Button";
+import FormCheckboxGroup from "./common/FormCheckboxGroup";
+import ButtonGroup from "./common/ButtonGroup";
 import SectionForm, { Section } from "./common/SectionForm";
 
 interface ValidationErrors {
@@ -128,34 +129,18 @@ export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProp
           }}
           error={errors.name}
           placeholder="Enter test name"
+          required
         />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Categories
-          </label>
-          <div className="space-y-2">
-            {categories?.map((category: Category) => (
-              <label key={category.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={selectedCategories.includes(category.id.toString())}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedCategories([...selectedCategories, category.id.toString()]);
-                    } else {
-                      setSelectedCategories(
-                        selectedCategories.filter((id) => id !== category.id.toString())
-                      );
-                    }
-                  }}
-                  className="rounded"
-                />
-                {category.name}
-              </label>
-            ))}
-          </div>
-        </div>
+        <FormCheckboxGroup
+          label="Categories"
+          options={categories?.map(cat => ({
+            id: cat.id.toString(),
+            label: cat.name
+          })) || []}
+          selectedValues={selectedCategories}
+          onChange={setSelectedCategories}
+        />
 
         <SectionForm
           sections={sections}
@@ -165,20 +150,12 @@ export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProp
           errors={errors.sections}
         />
 
-        <div className="flex gap-4">
-          <Button
-            type="submit"
-            disabled={!isFormValid}
-          >
-            Create Test
-          </Button>
-          <Button
-            onClick={onClose}
-            variant="secondary"
-          >
-            Cancel
-          </Button>
-        </div>
+        <ButtonGroup
+          onSubmit={handleSubmit}
+          onCancel={onClose}
+          submitText="Create Test"
+          isSubmitDisabled={!isFormValid}
+        />
       </form>
     </Modal>
   );

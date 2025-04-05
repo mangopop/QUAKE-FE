@@ -1,27 +1,32 @@
 import React from 'react';
 import FormField from './FormField';
 
-interface FormInputProps {
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface FormSelectProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: string;
-  placeholder?: string;
+  options: Option[];
   error?: string;
   required?: boolean;
   className?: string;
+  placeholder?: string;
 }
 
-export default function FormInput({
+export default function FormSelect({
   label,
   value,
   onChange,
-  type = 'text',
-  placeholder,
+  options,
   error,
   required = false,
   className = '',
-}: FormInputProps) {
+  placeholder
+}: FormSelectProps) {
   return (
     <FormField
       label={label}
@@ -29,15 +34,24 @@ export default function FormInput({
       required={required}
       className={className}
     >
-      <input
-        type={type}
+      <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
         className={`w-full border rounded p-2 ${
           error ? 'border-red-500' : 'border-gray-300'
         } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-      />
+      >
+        {placeholder && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </FormField>
   );
 }
