@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import FormField from './FormField';
+import FormInput from './FormInput';
 
 interface Option {
   id: string;
@@ -51,21 +52,21 @@ export default function FormCheckboxGroup({
       required={required}
       className={className}
     >
-      <div className="space-y-2">
-        <input
-          type="text"
+      <div className="space-y-1">
+        <FormInput
+          label=""
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={setSearchTerm}
           placeholder="Search options..."
-          className="w-full px-3 py-2 border rounded-md text-sm"
+          className="mb-1"
         />
-        <div className={`overflow-y-auto ${maxHeight} border rounded-md bg-white`}>
-          <div className="divide-y">
+        <div className={`overflow-y-auto max-h-48 border rounded-md bg-white`}>
+          <div className="divide-y divide-gray-100">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => (
                 <label
                   key={option.id}
-                  className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 cursor-pointer text-sm"
                 >
                   <input
                     type="checkbox"
@@ -73,18 +74,18 @@ export default function FormCheckboxGroup({
                     onChange={() => handleChange(option.id)}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm">{option.label}</span>
+                  <span>{option.label}</span>
                 </label>
               ))
             ) : (
-              <div className="px-3 py-2 text-sm text-gray-500">
+              <div className="px-2 py-1.5 text-sm text-gray-500">
                 No options found
               </div>
             )}
           </div>
         </div>
         {selectedValues.length > 0 && (
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 mt-1">
             {selectedValues.length} selected
           </div>
         )}

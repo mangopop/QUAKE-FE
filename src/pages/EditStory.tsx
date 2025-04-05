@@ -4,7 +4,9 @@ import { useStory, useUpdateStory, useTemplates } from "../services/stories.serv
 import { useCategories } from "../services/categories.service";
 import type { Story, Template, Category, UpdateStoryRequest } from "../services/types";
 import FormInput from '../components/common/FormInput';
-import Button from '../components/common/Button';
+import FormCheckboxGroup from '../components/common/FormCheckboxGroup';
+import FormSelect from '../components/common/FormSelect';
+import ButtonGroup from '../components/common/ButtonGroup';
 import DeleteIcon from '../components/common/DeleteIcon';
 import EditIcon from '../components/common/EditIcon';
 import ActionButtons from '../components/ActionButtons';
@@ -67,29 +69,19 @@ export default function EditStory() {
     }
   };
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNameChange = (value: string) => {
     setEditedStory({
       ...editedStory,
-      name: e.target.value
+      name: value
     });
   };
 
-  const handleCategoryToggle = (categoryId: number) => {
+  const handleCategoryChange = (selectedIds: string[]) => {
     setEditedStory(prev => {
       if (!prev) return prev;
-
-      const currentCategories = prev.categories || [];
-      const categoryExists = currentCategories.some(cat =>
-        (typeof cat === 'string' ? cat : cat.id.toString()) === categoryId.toString()
-      );
-
       return {
         ...prev,
-        categories: categoryExists
-          ? currentCategories.filter(cat =>
-              (typeof cat === 'string' ? cat : cat.id.toString()) !== categoryId.toString()
-            )
-          : [...currentCategories, categories.find(c => c.id === categoryId)!]
+        categories: selectedIds.map(id => categories.find(c => c.id.toString() === id)!)
       };
     });
   };
@@ -131,81 +123,57 @@ export default function EditStory() {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Edit Story</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate('/stories')}
-              className="px-4 py-2 border rounded hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={updateStory.isPending}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-            >
-              Save Changes
-            </button>
-          </div>
+          <ButtonGroup
+            onSubmit={handleSubmit}
+            onCancel={() => navigate('/stories')}
+            submitText="Save Changes"
+            isSubmitDisabled={updateStory.isPending}
+          />
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Story Name
-              </label>
-              <input
-                type="text"
-                value={editedStory.name}
-                onChange={handleNameChange}
-                className="w-full border rounded p-2"
-                placeholder="Enter story name"
-              />
-            </div>
+            <FormInput
+              label="Story Name"
+              value={editedStory.name}
+              onChange={handleNameChange}
+              placeholder="Enter story name"
+              required
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Categories
-              </label>
-              <div className="space-y-2">
-                {categories.map((category: Category) => (
-                  <label key={category.id} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={editedStory.categories?.some(cat =>
-                        (typeof cat === 'string' ? cat : cat.id.toString()) === category.id.toString()
-                      )}
-                      onChange={() => handleCategoryToggle(category.id)}
-                      className="rounded"
-                    />
-                    {category.name}
-                  </label>
-                ))}
-              </div>
-            </div>
+            <FormCheckboxGroup
+              label="Categories"
+              options={categories.map(category => ({
+                id: category.id.toString(),
+                label: category.name
+              }))}
+              selectedValues={editedStory.categories.map(cat =>
+                (typeof cat === 'string' ? cat : cat.id.toString())
+              )}
+              onChange={handleCategoryChange}
+            />
 
             <div>
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-medium">Templates</h3>
-                <div className="flex gap-2">
-                  <select
+                <div className="flex items-center gap-2">
+                  <FormSelect
+                    label=""
                     value={selectedTemplateId}
-                    onChange={(e) => setSelectedTemplateId(e.target.value)}
-                    className="border rounded p-2 pr-8"
-                  >
-                    <option value="">Select a template</option>
-                    {availableTemplatesToAdd.map((template: Template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedTemplateId}
+                    options={availableTemplatesToAdd.map(template => ({
+                      value: template.id.toString(),
+                      label: template.name
+                    }))}
+                    placeholder="Select a template"
+                    className="w-64"
+                  />
                   <button
                     onClick={handleAddTemplate}
                     disabled={!selectedTemplateId}
-                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                    className="p-2 -mt-[1px] bg-green-500 text-white text-sm rounded border border-transparent hover:bg-green-600 disabled:opacity-50"
                   >
-                    Add Template
+                    Add
                   </button>
                 </div>
               </div>
