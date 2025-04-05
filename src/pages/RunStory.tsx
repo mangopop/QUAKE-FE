@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   useStory,
   useUpdateTestResult,
@@ -9,8 +9,6 @@ import {
   storiesService
 } from "../services/stories.service";
 import type { Test, SectionResult, Section } from "../services/types";
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useQueryClient } from "@tanstack/react-query";
 import BackButton from '../components/common/BackButton';
 import TestCard from '../components/common/TestCard';
