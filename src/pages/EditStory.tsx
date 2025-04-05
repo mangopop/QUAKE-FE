@@ -3,6 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useStory, useUpdateStory, useTemplates } from "../services/stories.service";
 import { useCategories } from "../services/categories.service";
 import type { Story, Template, Category, UpdateStoryRequest } from "../services/types";
+import FormInput from '../components/common/FormInput';
+import Button from '../components/common/Button';
+import DeleteIcon from '../components/common/DeleteIcon';
+import EditIcon from '../components/common/EditIcon';
+import ActionButtons from '../components/ActionButtons';
 
 export default function EditStory() {
   const { storyId } = useParams<{ storyId: string }>();
@@ -117,6 +122,10 @@ export default function EditStory() {
     (template: Template) => !editedStory.templates.some((t: Template) => t.id === template.id)
   );
 
+  const handleEditTemplate = (templateId: number) => {
+    // Implementation of handleEditTemplate function
+  };
+
   return (
     <div className="p-4">
       <div className="max-w-4xl mx-auto">
@@ -209,15 +218,10 @@ export default function EditStory() {
                         <span className="font-medium">{templateTestCounts[template.id] || 0}</span> tests
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleRemoveTemplate(template.id)}
-                      className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
-                      title="Delete"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    <ActionButtons
+                      onEdit={() => handleEditTemplate(template.id)}
+                      onDelete={() => handleRemoveTemplate(template.id)}
+                    />
                   </div>
                 ))}
                 {(!editedStory.templates || editedStory.templates.length === 0) && (
