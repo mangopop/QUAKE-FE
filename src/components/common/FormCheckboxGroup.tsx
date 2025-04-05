@@ -25,7 +25,7 @@ export default function FormCheckboxGroup({
   error,
   required,
   className = '',
-  maxHeight = 'h-48'
+  maxHeight = 'max-h-48'
 }: FormCheckboxGroupProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
