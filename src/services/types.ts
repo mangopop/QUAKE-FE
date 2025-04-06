@@ -52,6 +52,60 @@ export interface Story {
       categories: any[][];
     };
   }[];
+  isCompleted?: boolean;
+  completedAt?: string;
+  completedBy?: Owner;
+  history?: StoryHistory[];
+}
+
+export interface StoryHistory {
+  story_id: number;
+  story_name: string;
+  history: {
+    timestamp: string;
+    status: "passed" | "failed";
+    created_by: {
+      id: number;
+      username: string;
+    };
+    tests: {
+      id: number;
+      name: string;
+      status: "passed" | "failed";
+      notes: string[];
+      sections: {
+        id: number;
+        name: string;
+        status: "passed" | "failed";
+      }[];
+      section_notes: string[];
+    }[];
+  }[];
+}
+
+export interface StoryHistoryResponse {
+  story_id: number;
+  story_name: string;
+  history: {
+    timestamp: string;
+    status: string;
+    created_by: {
+      id: number;
+      firstName: string;
+    };
+    tests: {
+      id: number;
+      name: string;
+      status: string;
+      notes: string[];
+      sections: {
+        id: number;
+        name: string;
+        status: string;
+      }[];
+      section_notes: string[];
+    }[];
+  }[];
 }
 
 export interface Section {

@@ -18,6 +18,7 @@ interface NotesSectionProps {
   onSaveNote: (note: string) => void;
   initialNotesShown?: number;
   maxLinesBeforeCollapse?: number;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -26,6 +27,7 @@ export default function NotesSection({
   onSaveNote,
   initialNotesShown = 2,
   maxLinesBeforeCollapse = 20,
+  disabled = false,
   className = ''
 }: NotesSectionProps) {
   const [newNote, setNewNote] = useState('');
@@ -83,11 +85,12 @@ export default function NotesSection({
             className="w-full border rounded p-2 text-sm bg-white text-black"
             rows={3}
             placeholder="Add a new note..."
+            disabled={disabled}
           />
           <div className="flex justify-end mt-2">
             <button
               onClick={handleSaveNote}
-              disabled={!newNote.trim()}
+              disabled={disabled || !newNote.trim()}
               className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Note

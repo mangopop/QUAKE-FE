@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
-import type { Story, CreateStoryRequest, UpdateStoryRequest, Test, Template, SectionResultsResponse, SectionResult, SectionNotesResponse, SectionNote } from './types';
+import type { Story, CreateStoryRequest, UpdateStoryRequest, Test, Template, SectionResultsResponse, SectionResult, SectionNotesResponse, SectionNote, StoryHistory } from './types';
 
 const ENDPOINTS = {
   stories: '/api/stories',
@@ -11,6 +11,9 @@ const ENDPOINTS = {
   storySectionNotes: (storyId: string, sectionId: number) => `/api/stories/${storyId}/section-results/${sectionId}/notes`,
   testsByTemplate: (templateId: number) => `/api/tests/by-template/${templateId}`,
   templates: '/api/templates',
+  storyComplete: (storyId: string) => `/api/stories/${storyId}/complete`,
+  storyHistory: (storyId: string) => `/api/stories/${storyId}/history`,
+  storyFailed: (storyId: string) => `/api/stories/${storyId}/failed`,
 } as const;
 
 export const queryKeys = {
@@ -92,6 +95,21 @@ export const storiesService = {
 
   addSectionNote: async (storyId: string, sectionId: number, data: { note: string }) => {
     const response = await apiClient.post<SectionNote>(ENDPOINTS.storySectionNotes(storyId, sectionId), data);
+    return response.data;
+  },
+
+  completeStory: async (storyId: string, data: { notes: string }) => {
+    const response = await apiClient.post<Story>(ENDPOINTS.storyComplete(storyId), data);
+    return response.data;
+  },
+
+  getStoryHistory: async (storyId: string) => {
+    const response = await apiClient.get<StoryHistory[]>(ENDPOINTS.storyHistory(storyId));
+    return response.data;
+  },
+
+  markStoryFailed: async (storyId: string, data: { notes: string; failureReasons: { testId: number; testName: string; sectionId?: number; sectionName?: string; reason: string }[] }) => {
+    const response = await apiClient.post<Story>(ENDPOINTS.storyFailed(storyId), data);
     return response.data;
   },
 };
@@ -224,6 +242,40 @@ export const useAddSectionNote = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['section-notes', variables.storyId, variables.sectionId] });
       queryClient.invalidateQueries({ queryKey: ['section-results', variables.storyId] });
+    }
+  });
+};
+
+export const useCompleteStory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ storyId, data }: { storyId: string; data: { notes: string } }) =>
+      storiesService.completeStory(storyId, data),
+    onSuccess: (_, { storyId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.story(storyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stories });
+    }
+  });
+};
+
+export const useStoryHistory = (storyId: string) => {
+  return useQuery({
+    queryKey: ['story-history', storyId],
+    queryFn: () => storiesService.getStoryHistory(storyId),
+    enabled: !!storyId
+  });
+};
+
+export const useMarkStoryFailed = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ storyId, data }: { storyId: string; data: { notes: string; failureReasons: { testId: number; testName: string; sectionId?: number; sectionName?: string; reason: string }[] } }) =>
+      storiesService.markStoryFailed(storyId, data),
+    onSuccess: (_, { storyId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.story(storyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stories });
     }
   });
 };

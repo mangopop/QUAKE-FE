@@ -5,6 +5,7 @@ interface StatusButtonProps {
   currentStatus?: string;
   onClick: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
 const statusColors = {
@@ -22,14 +23,15 @@ const statusColors = {
   }
 };
 
-export default function StatusButton({ status, currentStatus, onClick, className = '' }: StatusButtonProps) {
+export default function StatusButton({ status, currentStatus, onClick, className = '', disabled = false }: StatusButtonProps) {
   const isActive = currentStatus === status;
   const colors = statusColors[status];
 
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1 rounded-md text-sm font-medium ${isActive ? colors.active : colors.inactive} ${className}`}
+      className={`px-3 py-1 rounded-md text-sm font-medium ${isActive ? colors.active : colors.inactive} ${className} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+      disabled={disabled}
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </button>

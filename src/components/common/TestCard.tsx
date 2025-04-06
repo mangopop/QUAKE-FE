@@ -47,6 +47,7 @@ interface TestCardProps {
   }>;
   initialNotesShown?: number;
   maxLinesBeforeCollapse?: number;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -61,6 +62,7 @@ export default function TestCard({
   notes,
   initialNotesShown = 2,
   maxLinesBeforeCollapse = 20,
+  disabled = false,
   className = ''
 }: TestCardProps) {
   const [expandedSectionNotes, setExpandedSectionNotes] = useState<Set<string>>(new Set());
@@ -81,17 +83,21 @@ export default function TestCard({
   return (
     <div className={`bg-white p-6 rounded-lg shadow-sm border ${className}`}>
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">{test.name}</h3>
+        <div>
+          <h3 className="text-lg font-medium">{test.name}</h3>
+        </div>
         <div className="flex space-x-2">
           <StatusButton
             status="passed"
             currentStatus={status}
             onClick={() => onStatusChange('passed')}
+            disabled={disabled}
           />
           <StatusButton
             status="failed"
             currentStatus={status}
             onClick={() => onStatusChange('failed')}
+            disabled={disabled}
           />
         </div>
       </div>
@@ -108,6 +114,7 @@ export default function TestCard({
               notes={sectionResults[section.id]?.notes || []}
               initialNotesShown={initialNotesShown}
               maxLinesBeforeCollapse={maxLinesBeforeCollapse}
+              disabled={disabled}
             />
           ))}
         </div>
@@ -119,6 +126,7 @@ export default function TestCard({
           onSaveNote={onSaveNote}
           initialNotesShown={initialNotesShown}
           maxLinesBeforeCollapse={maxLinesBeforeCollapse}
+          disabled={disabled}
         />
       </div>
     </div>

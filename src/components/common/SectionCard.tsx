@@ -25,6 +25,7 @@ interface SectionCardProps {
   }>;
   initialNotesShown?: number;
   maxLinesBeforeCollapse?: number;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -36,6 +37,7 @@ export default function SectionCard({
   notes,
   initialNotesShown = 2,
   maxLinesBeforeCollapse = 20,
+  disabled = false,
   className = ''
 }: SectionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -54,16 +56,19 @@ export default function SectionCard({
             status="not_tested"
             currentStatus={status}
             onClick={() => onStatusChange('not_tested')}
+            disabled={disabled}
           />
           <StatusButton
             status="passed"
             currentStatus={status}
             onClick={() => onStatusChange('passed')}
+            disabled={disabled}
           />
           <StatusButton
             status="failed"
             currentStatus={status}
             onClick={() => onStatusChange('failed')}
+            disabled={disabled}
           />
           <NoteButton
             isExpanded={isExpanded}
