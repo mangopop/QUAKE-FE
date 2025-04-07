@@ -81,7 +81,7 @@ export default function TestCard({
   };
 
   return (
-    <div className={`bg-white p-6 rounded-lg shadow-sm border ${className}`}>
+    <div className={`bg-white p-6 rounded-lg shadow-sm border ${className}`} data-testid="test-card">
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">{test.name}</h3>

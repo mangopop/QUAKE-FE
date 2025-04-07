@@ -18,7 +18,7 @@ import TestCard from '../components/common/TestCard';
 import StatusHeader from '../components/common/StatusHeader';
 import TestHistory from '../components/TestHistory';
 import CompletionModal from '../components/CompletionModal';
-  import FailedModal from '../components/FailedModal';
+import FailedModal from '../components/FailedModal';
 
 type TestStatus = "not_tested" | "passed" | "failed";
 
@@ -341,6 +341,7 @@ export default function RunStory() {
             <button
               onClick={() => setShowFailedModal(true)}
               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              data-testid="mark-failed-button"
             >
               Mark as Failed
             </button>
@@ -348,6 +349,7 @@ export default function RunStory() {
               <button
                 onClick={() => setShowCompletionModal(true)}
                 className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                data-testid="complete-story-button"
               >
                 Complete Story
               </button>
@@ -356,7 +358,7 @@ export default function RunStory() {
         )}
 
         {story?.isCompleted && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4" data-testid="completion-banner">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-green-800 font-medium">Story Completed</h3>

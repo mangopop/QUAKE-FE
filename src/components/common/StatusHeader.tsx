@@ -19,7 +19,7 @@ export default function StatusHeader({
     <div className={`flex justify-between items-center mb-6 ${className}`}>
       <h2 className="text-xl font-bold">{title}</h2>
       {hasDuplicates && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4" data-testid="duplicate-warning">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">

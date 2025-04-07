@@ -57,21 +57,23 @@ export default function FailedModal({ isOpen, onClose, onFail, tests }: FailedMo
           value={failureNotes}
           onChange={(e) => setFailureNotes(e.target.value)}
           placeholder="Add failure notes..."
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border rounded mt-4"
           rows={4}
+          data-testid="failure-notes"
         />
 
         <div>
-          <div className="flex justify-between items-center mb-2">
+          <div className="flex justify-between items-center mt-4">
             <h4 className="font-medium">Failure Reasons</h4>
             <button
               onClick={addFailureReason}
               className="text-blue-500 hover:text-blue-600 text-sm"
+              data-testid="add-failure-reason"
             >
               + Add Reason
             </button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 mt-2">
             {failureReasons.map((reason, index) => (
               <div key={index} className="flex items-start space-x-2">
                 <div className="flex-1 space-y-2">
@@ -79,6 +81,7 @@ export default function FailedModal({ isOpen, onClose, onFail, tests }: FailedMo
                     value={reason.testId}
                     onChange={(e) => updateFailureReason(index, "testId", parseInt(e.target.value))}
                     className="w-full p-2 border rounded"
+                    data-testid="test-select"
                   >
                     <option value="">Select Test</option>
                     {tests.map((test) => (
@@ -91,6 +94,7 @@ export default function FailedModal({ isOpen, onClose, onFail, tests }: FailedMo
                     value={reason.sectionId || ""}
                     onChange={(e) => updateFailureReason(index, "sectionId", e.target.value ? parseInt(e.target.value) : undefined)}
                     className="w-full p-2 border rounded"
+                    data-testid="section-select"
                   >
                     <option value="">Select Section (Optional)</option>
                     {tests
@@ -107,6 +111,7 @@ export default function FailedModal({ isOpen, onClose, onFail, tests }: FailedMo
                     onChange={(e) => updateFailureReason(index, "reason", e.target.value)}
                     placeholder="Failure reason..."
                     className="w-full p-2 border rounded"
+                    data-testid="reason-input"
                   />
                 </div>
                 <button
@@ -120,13 +125,9 @@ export default function FailedModal({ isOpen, onClose, onFail, tests }: FailedMo
           </div>
         </div>
 
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-2 mt-4">
           <button
-            onClick={() => {
-              setFailureNotes("");
-              setFailureReasons([]);
-              onClose();
-            }}
+            onClick={onClose}
             className="px-4 py-2 border rounded hover:bg-gray-50"
           >
             Cancel
@@ -134,7 +135,7 @@ export default function FailedModal({ isOpen, onClose, onFail, tests }: FailedMo
           <button
             onClick={handleFail}
             className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-            disabled={failureReasons.length === 0 || !failureNotes.trim()}
+            data-testid="confirm-failure"
           >
             Mark as Failed
           </button>

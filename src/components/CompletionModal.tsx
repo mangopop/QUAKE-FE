@@ -25,10 +25,11 @@ export default function CompletionModal({ isOpen, onClose, onComplete }: Complet
           value={completionNotes}
           onChange={(e) => setCompletionNotes(e.target.value)}
           placeholder="Add completion notes..."
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border rounded mt-4"
           rows={4}
+          data-testid="completion-notes"
         />
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-2 mt-4">
           <button
             onClick={() => {
               setCompletionNotes("");
@@ -41,6 +42,7 @@ export default function CompletionModal({ isOpen, onClose, onComplete }: Complet
           <button
             onClick={handleComplete}
             className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            data-testid="confirm-completion"
           >
             Complete Story
           </button>
