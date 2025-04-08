@@ -12,7 +12,7 @@ const testsService = new BaseService<Test, CreateTestRequest, CreateTestRequest>
 
 interface GetTestsParams extends BaseQueryParams {
   categories?: string[];
-  ownerId?: number;
+  ownerId?: string;
 }
 
 export const queryKeys = {

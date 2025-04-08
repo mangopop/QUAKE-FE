@@ -13,6 +13,7 @@ export interface BaseQueryParams {
   limit?: number;
   q?: string;
   categories?: string[];
+  ownerId?: string;
   [key: string]: any;
 }
 
@@ -23,7 +24,7 @@ export class BaseService<T, CreateT = T, UpdateT = Partial<T>> {
   ) {}
 
   async getAll(params?: BaseQueryParams) {
-    if ((params?.q || params?.categories) && this.endpoints.search) {
+    if ((params?.q || params?.categories || params?.ownerId) && this.endpoints.search) {
       const response = await apiClient.get<PaginatedResponse<T[]>>(this.endpoints.search, { params });
       return response.data;
     }

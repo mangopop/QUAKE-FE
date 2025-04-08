@@ -41,7 +41,7 @@ export default function TestList() {
     limit: itemsPerPage,
     q: debouncedSearch,
     categories: selectedCategoryId ? [selectedCategoryId] : undefined,
-    ownerId: selectedOwnerId || undefined
+    ownerId: selectedOwnerId ? String(selectedOwnerId) : undefined
   })
 
   const deleteMutation = useDeleteTest()
