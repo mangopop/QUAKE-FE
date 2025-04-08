@@ -127,6 +127,7 @@ export default function TestList() {
                 <Card
                   key={test.id}
                   title={test.name}
+                  description={test.description}
                   owner={test.owner}
                   onEdit={() => handleEdit(test)}
                   onDelete={() => handleDelete(test.id)}

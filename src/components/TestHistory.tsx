@@ -8,37 +8,39 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
   if (!storyHistory.history.length) return null;
 
   return (
-    <div className="mb-6">
-      <h3 className="text-lg font-medium mb-2">Test History</h3>
-      <div className="space-y-2">
+    <div className="mb-8">
+      <h3 className="text-xl font-semibold mb-4 text-gray-800">Test History</h3>
+      <div className="space-y-4">
         {storyHistory.history.map((entry, index) => (
-          <div key={index} className="border rounded-lg overflow-hidden">
+          <div key={index} className="border rounded-lg overflow-hidden shadow-sm">
             <div
-              className={`p-3 cursor-pointer flex justify-between items-center ${
-                entry.status === "2" ? "bg-green-50" : "bg-red-50"
+              className={`p-4 cursor-pointer flex justify-between items-center transition-colors duration-200 ${
+                entry.status === "2" ? "bg-green-50 hover:bg-green-100" : "bg-red-50 hover:bg-red-100"
               }`}
               onClick={() => {
                 const details = document.getElementById(`history-details-${index}`);
-                if (details) {
+                const arrow = document.getElementById(`history-arrow-${index}`);
+                if (details && arrow) {
                   details.classList.toggle('hidden');
+                  arrow.classList.toggle('rotate-180');
                 }
               }}
             >
-              <div className="flex items-center space-x-3">
-                <span className={`px-2 py-1 rounded text-sm ${
+              <div className="flex items-center space-x-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                   entry.status === "2" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                 }`}>
                   {entry.status === "2" ? "Passed" : "Failed"}
                 </span>
-                <span className="text-sm text-gray-600">
-                  {new Date(entry.timestamp).toLocaleString()}
-                </span>
-                <span className="text-sm text-gray-600">
-                  by {entry.created_by.firstName}
-                </span>
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                  <span className="text-gray-400">•</span>
+                  <span>by {entry.created_by.firstName}</span>
+                </div>
               </div>
               <svg
-                className="w-5 h-5 text-gray-500"
+                id={`history-arrow-${index}`}
+                className="w-5 h-5 text-gray-500 transition-transform duration-200"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -53,13 +55,13 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
             </div>
 
             <div id={`history-details-${index}`} className="hidden">
-              <div className="p-3 border-t bg-white">
-                <div className="space-y-3">
+              <div className="p-4 border-t bg-white">
+                <div className="space-y-4">
                   {entry.tests.map((test) => (
-                    <div key={test.id} className="border rounded p-2">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-medium">{test.name}</span>
-                        <span className={`px-2 py-1 rounded text-xs ${
+                    <div key={test.id} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="font-medium text-gray-900">{test.name}</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           test.status === "passed" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                         }`}>
                           {test.status === "passed" ? "Passed" : "Failed"}
@@ -67,18 +69,18 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
                       </div>
 
                       {test.notes.length > 0 && (
-                        <div className="mt-3">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Test Notes</h4>
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">Test Notes</h4>
                           <div className="space-y-2">
                             {test.notes.map((note, noteIndex) => {
                               const match = note.match(/\[(.*?)\] (.*?): (.*)/);
                               if (match) {
                                 const [, timestamp, user, content] = match;
                                 return (
-                                  <div key={noteIndex} className="text-xs bg-white rounded p-1.5 border">
-                                    <div className="flex items-center text-gray-500 mb-0.5">
+                                  <div key={noteIndex} className="text-sm bg-white rounded-lg p-3 border">
+                                    <div className="flex items-center text-gray-500 mb-1">
                                       <span>{timestamp}</span>
-                                      <span className="mx-1">•</span>
+                                      <span className="mx-2">•</span>
                                       <span className="font-medium">{user}</span>
                                     </div>
                                     <div className="text-gray-700">{content}</div>
@@ -92,14 +94,14 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
                       )}
 
                       {test.sections.length > 0 && (
-                        <div className="mt-3">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Sections</h4>
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">Sections</h4>
                           <div className="space-y-3">
                             {test.sections.map((section) => (
-                              <div key={section.id} className="bg-gray-50 rounded p-2">
-                                <div className="flex justify-between items-center mb-1">
-                                  <span className="font-medium">{section.name}</span>
-                                  <span className={`px-2 py-1 rounded text-xs ${
+                              <div key={section.id} className="bg-white rounded-lg p-3 border">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="font-medium text-gray-900">{section.name}</span>
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                                     section.status === "passed" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                                   }`}>
                                     {section.status}
@@ -107,7 +109,7 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
                                 </div>
 
                                 {test.section_notes.length > 0 && (
-                                  <div className="mt-2 space-y-1">
+                                  <div className="mt-3 space-y-2">
                                     {test.section_notes
                                       .filter(note => note.includes(`[Section: ${section.name}]`))
                                       .map((note, noteIndex) => {
@@ -115,10 +117,10 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
                                         if (match) {
                                           const [, , timestamp, user, content] = match;
                                           return (
-                                            <div key={noteIndex} className="text-xs bg-white rounded p-1.5 border">
-                                              <div className="flex items-center text-gray-500 mb-0.5">
+                                            <div key={noteIndex} className="text-sm bg-gray-50 rounded-lg p-2 border">
+                                              <div className="flex items-center text-gray-500 mb-1">
                                                 <span>{timestamp}</span>
-                                                <span className="mx-1">•</span>
+                                                <span className="mx-2">•</span>
                                                 <span className="font-medium">{user}</span>
                                               </div>
                                               <div className="text-gray-700">{content}</div>

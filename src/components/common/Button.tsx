@@ -19,7 +19,7 @@ export default function Button({
   disabled = false,
   className = ''
 }: ButtonProps) {
-  const baseStyles = 'px-4 py-2 rounded';
+  const baseStyles = 'px-4 py-2 rounded cursor-pointer';
   const variantStyles = {
     primary: 'bg-blue-500 text-white hover:bg-blue-600',
     secondary: 'bg-gray-200 text-gray-700 hover:bg-gray-300',

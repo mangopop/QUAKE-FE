@@ -7,6 +7,7 @@ interface TestCardProps {
   test: {
     id: number;
     name: string;
+    description?: string;
     sections: Array<{
       id: number;
       name: string;
@@ -85,6 +86,9 @@ export default function TestCard({
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">{test.name}</h3>
+          {test.description && (
+            <p className="text-sm text-gray-600 mt-1">{test.description}</p>
+          )}
         </div>
         <div className="flex space-x-2">
           <StatusButton

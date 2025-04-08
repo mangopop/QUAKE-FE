@@ -46,15 +46,13 @@ export default function SectionForm({
           <div key={index} className="border rounded-lg p-4 bg-gray-50">
             <div className="flex justify-between items-start mb-2">
               <h3 className="text-sm font-medium text-gray-700">Section {index + 1}</h3>
-              {sections.length > 1 && (
-                <button
-                  onClick={() => onRemoveSection(index)}
-                  title="Delete"
-                  className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
-                  >
-                  <DeleteIcon />
-                </button>
-              )}
+              <button
+                onClick={() => onRemoveSection(index)}
+                title="Delete"
+                className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
+                >
+                <DeleteIcon />
+              </button>
             </div>
             <div className="space-y-2">
               <FormInput

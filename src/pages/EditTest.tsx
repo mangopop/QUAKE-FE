@@ -20,8 +20,9 @@ export default function EditTest() {
 
   const [formData, setFormData] = useState<CreateTestRequest>({
     name: "",
+    description: "",
     templateId: undefined,
-    sections: [{ name: "", description: "", orderIndex: 0 }],
+    sections: [],
     categories: []
   });
 
@@ -29,12 +30,13 @@ export default function EditTest() {
     if (test) {
       setFormData({
         name: test.name,
+        description: test.description || "",
         templateId: test.templateId,
         sections: test.sections?.length ? test.sections.map(section => ({
           name: section.name,
           description: section.description,
           orderIndex: section.orderIndex
-        })) : [{ name: "", description: "", orderIndex: 0 }],
+        })) : [],
         categories: test.categories.map(cat => typeof cat === 'string' ? cat : cat.id.toString())
       });
     }
@@ -90,12 +92,6 @@ export default function EditTest() {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Edit Test</h2>
-          <ButtonGroup
-            onSubmit={handleSubmit}
-            onCancel={() => navigate("/tests")}
-            submitText={updateTest.isPending ? 'Saving...' : 'Save Changes'}
-            isSubmitDisabled={updateTest.isPending}
-          />
         </div>
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -106,6 +102,16 @@ export default function EditTest() {
               placeholder="Enter test name"
               required
             />
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter test description"
+                className="w-full border rounded p-2 min-h-[100px]"
+              />
+            </div>
 
             <FormCheckboxGroup
               label="Categories"
@@ -122,6 +128,13 @@ export default function EditTest() {
               onAddSection={addSection}
               onRemoveSection={removeSection}
               onUpdateSection={updateSection}
+            />
+
+            <ButtonGroup
+              onSubmit={handleSubmit}
+              onCancel={() => navigate("/tests")}
+              submitText={updateTest.isPending ? 'Saving...' : 'Save Changes'}
+              isSubmitDisabled={updateTest.isPending}
             />
           </form>
         </div>

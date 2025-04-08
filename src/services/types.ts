@@ -134,6 +134,7 @@ export interface Test {
   name: string;
   owner: Owner;
   notes: string | null;
+  description?: string;
   categories: (string | Category)[];
   templateId?: string;
   sections: Section[];
@@ -149,6 +150,7 @@ export interface PaginatedTestsResponse {
 
 export interface CreateTestRequest {
   name: string;
+  description?: string;
   templateId?: string;
   sections: {
     name: string;

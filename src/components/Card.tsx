@@ -4,6 +4,7 @@ import ActionButtons from './ActionButtons';
 
 interface CardProps {
   title?: string;
+  description?: string;
   owner?: {
     id: number;
     email: string;
@@ -38,6 +39,7 @@ interface CardProps {
 
 export default function Card({
   title,
+  description,
   owner,
   onEdit,
   onDelete,
@@ -52,10 +54,11 @@ export default function Card({
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition-colors flex flex-col h-full ${className}`}>
       <div className="p-4 flex-1 flex flex-col">
-        {(title || owner || onEdit || onDelete) && (
+        {(title || description || owner || onEdit || onDelete) && (
           <div className="flex justify-between items-start mb-3">
             <div className="flex-1">
               {title && <h3 className="text-lg font-semibold text-gray-900 mb-1 break-words">{title}</h3>}
+              {description && <p className="text-sm text-gray-500 mb-2">{description}</p>}
               {owner && <OwnerInfo owner={owner} />}
             </div>
             <div className="flex gap-2 flex-shrink-0">

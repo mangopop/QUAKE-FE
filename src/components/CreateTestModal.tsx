@@ -23,9 +23,10 @@ export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProp
   const { data: categories } = useCategories();
   const createCategory = useCreateCategory();
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [sections, setSections] = useState<Section[]>([{ name: "", description: "", orderIndex: 0 }]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [errors, setErrors] = useState<ValidationErrors>({});
 
   const validateForm = (): boolean => {
@@ -64,6 +65,7 @@ export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProp
     try {
       const testData: CreateTestRequest = {
         name: name.trim(),
+        description: description.trim(),
         sections: sections.map((section, index) => ({
           ...section,
           orderIndex: index
@@ -74,8 +76,9 @@ export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProp
       onClose();
       // Reset form
       setName("");
+      setDescription("");
       setSelectedCategories([]);
-      setSections([{ name: "", description: "", orderIndex: 0 }]);
+      setSections([]);
       setErrors({});
     } catch (error) {
       console.error("Failed to create test:", error);
@@ -150,6 +153,16 @@ export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProp
           placeholder="Enter test name"
           required
         />
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Enter test description"
+            className="w-full border rounded p-2 min-h-[100px]"
+          />
+        </div>
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Categories</label>

@@ -32,6 +32,7 @@ export default function SearchTests() {
           <Card
             key={test.id}
             title={test.name}
+            description={test.description}
             owner={test.owner}
             metadata={[
               { label: 'sections', value: test.sections?.length || 0 },

@@ -26,11 +26,12 @@ const statusColors = {
 export default function StatusButton({ status, currentStatus, onClick, className = '', disabled = false }: StatusButtonProps) {
   const isActive = currentStatus === status;
   const colors = statusColors[status];
+  const baseStyles = 'px-3 py-1 rounded-full text-sm font-medium cursor-pointer';
 
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1 rounded-md text-sm font-medium ${isActive ? colors.active : colors.inactive} ${className} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+      className={`${baseStyles} ${isActive ? colors.active : colors.inactive} ${className} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
       disabled={disabled}
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}
