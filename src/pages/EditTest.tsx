@@ -9,13 +9,15 @@ import FormCheckboxGroup from "../components/common/FormCheckboxGroup";
 import FormSelect from "../components/common/FormSelect";
 import ButtonGroup from "../components/common/ButtonGroup";
 import SectionForm, { Section } from "../components/common/SectionForm";
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import LoadingText from '../components/common/LoadingText';
 
 export default function EditTest() {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
   const { data: test, isLoading: isLoadingTest } = useTest(testId || "0");
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
-  const { data: categories } = useCategories();
+  const { data: categories, isLoading: isLoadingCategories } = useCategories();
   const updateTest = useUpdateTest();
 
   const [formData, setFormData] = useState<CreateTestRequest>({
@@ -79,8 +81,8 @@ export default function EditTest() {
     }));
   };
 
-  if (isLoadingTest || isLoadingTemplates) {
-    return <div className="p-4">Loading...</div>;
+  if (isLoadingTest || isLoadingTemplates || isLoadingCategories) {
+    return <LoadingText />;
   }
 
   if (!test) {

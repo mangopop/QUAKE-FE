@@ -1,0 +1,15 @@
+@keyframes gradient-fill {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-fill {
+  animation: gradient-fill 1.5s ease-in-out infinite;
+}

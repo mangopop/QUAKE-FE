@@ -133,7 +133,6 @@ export default function TestList() {
                   onDelete={() => handleDelete(test.id)}
                   metadata={[
                     { label: 'sections', value: test.sections?.length || 0 },
-                    { label: 'categories', value: test.categories?.length || 0 }
                   ]}
                   notes={test.notes || undefined}
                   tags={test.categories?.map(category => ({
