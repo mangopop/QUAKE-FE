@@ -50,7 +50,7 @@ const TestFilters: React.FC<TestFiltersProps> = ({
             className="border p-2 rounded w-full"
             aria-label="Filter by category"
           >
-            <option value="">All Categories</option>
+            <option key="all-categories" value="">All Categories</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
@@ -65,7 +65,7 @@ const TestFilters: React.FC<TestFiltersProps> = ({
             className="border p-2 rounded w-full"
             aria-label="Filter by owner"
           >
-            <option value={0}>All Owners</option>
+            <option key="all-owners" value={0}>All Owners</option>
             {owners.map((owner) => (
               <option key={owner.id} value={owner.id}>
                 {owner.firstName} {owner.lastName}

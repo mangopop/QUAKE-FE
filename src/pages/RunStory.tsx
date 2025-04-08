@@ -340,7 +340,7 @@ export default function RunStory() {
           <div className="flex justify-end space-x-2 mb-6">
             <button
               onClick={() => setShowFailedModal(true)}
-              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 cursor-pointer"
               data-testid="mark-failed-button"
             >
               Mark as Failed
@@ -348,7 +348,7 @@ export default function RunStory() {
             {canCompleteStory() && (
               <button
                 onClick={() => setShowCompletionModal(true)}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 cursor-pointer"
                 data-testid="complete-story-button"
               >
                 Complete Story

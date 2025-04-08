@@ -1,24 +1,33 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStories, useCreateStory, useDeleteStory, useTemplates } from "../services/stories.service";
 import { useCategories } from "../services/categories.service";
-import type { Story, CreateStoryRequest, Category } from "../services/types";
+import type { Story, CreateStoryRequest, Category, Owner } from "../services/types";
 import CreateStoryModal from "../components/CreateStoryModal";
 import Card from "../components/Card";
 import PageHeader from "../components/PageHeader";
 import TestFilters from "../components/TestFilters";
 
 export default function Stories() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedOwnerId, setSelectedOwnerId] = useState(0);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
   const { data: stories, isLoading: isLoadingStories } = useStories();
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
   const { data: categories, isLoading: isLoadingCategories } = useCategories();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const createStory = useCreateStory();
   const deleteStory = useDeleteStory();
-  const navigate = useNavigate();
+
+  const availableCategories = useMemo(() => categories || [], [categories]);
+  const availableOwners = useMemo(() => {
+    if (!stories) return [];
+    const allOwners = stories.map(story => story.owner);
+    return Array.from(new Set(allOwners.map(owner => JSON.stringify(owner))))
+      .map(str => JSON.parse(str) as Owner);
+  }, [stories]);
 
   const getTestResults = (story: Story) => {
     if (!story.testResults || story.testResults.length === 0) {
@@ -53,21 +62,23 @@ export default function Stories() {
     }
   };
 
+  const filteredStories = useMemo(() => {
+    if (!stories) return [];
+    return stories.filter(story => {
+      const matchesSearch = story.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = !selectedCategory ||
+        story.categories.some(category => {
+          const categoryId = typeof category === 'string' ? category : category.id.toString();
+          return categoryId === selectedCategory;
+        });
+      const matchesOwner = !selectedOwnerId || story.owner.id === selectedOwnerId;
+      return matchesSearch && matchesCategory && matchesOwner;
+    });
+  }, [stories, searchQuery, selectedCategory, selectedOwnerId]);
+
   if (isLoadingStories || isLoadingTemplates || isLoadingCategories) {
     return <div>Loading...</div>;
   }
-
-  const availableCategories = (categories || []).map(cat => cat.name);
-
-  const filteredStories = stories?.filter(story => {
-    const matchesSearch = story.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory ||
-      story.categories.some(category => {
-        const categoryName = typeof category === 'string' ? category : category.name;
-        return categoryName === selectedCategory;
-      });
-    return matchesSearch && matchesCategory;
-  });
 
   return (
     <div className="p-4">
@@ -85,13 +96,13 @@ export default function Stories() {
         selectedOwnerId={selectedOwnerId}
         onOwnerChange={setSelectedOwnerId}
         categories={availableCategories}
-        owners={[]}
+        owners={availableOwners}
         isLoading={isLoadingCategories}
         searchPlaceholder="Search stories..."
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredStories?.map((story) => {
+        {filteredStories.map((story) => {
           const results = getTestResults(story);
           return (
             <Card
@@ -118,6 +129,10 @@ export default function Stories() {
                             "text-red-600"
                 }] : [])
               ]}
+              tags={story.categories.map(category => ({
+                text: typeof category === 'string' ? category : category.name,
+                className: 'bg-blue-50 text-blue-700 border border-blue-100'
+              }))}
               actionButton={{
                 label: "Run",
                 onClick: () => navigate(`/stories/${story.id}/run`),

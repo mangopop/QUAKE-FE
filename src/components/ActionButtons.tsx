@@ -13,7 +13,7 @@ export default function ActionButtons({ onEdit, onDelete }: ActionButtonsProps) 
       {onEdit && (
         <button
           onClick={onEdit}
-          className="text-gray-500 hover:text-blue-500 p-2 rounded-full hover:bg-blue-50 transition-colors"
+          className="text-gray-500 hover:text-blue-500 p-2 rounded-full hover:bg-blue-50 transition-colors cursor-pointer"
           title="Edit"
         >
           <EditIcon />
@@ -22,7 +22,7 @@ export default function ActionButtons({ onEdit, onDelete }: ActionButtonsProps) 
       {onDelete && (
         <button
           onClick={onDelete}
-          className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
+          className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors cursor-pointer"
           title="Delete"
         >
           <DeleteIcon />

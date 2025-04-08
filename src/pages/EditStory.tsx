@@ -123,15 +123,9 @@ export default function EditStory() {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Edit Story</h2>
-          <ButtonGroup
-            onSubmit={handleSubmit}
-            onCancel={() => navigate('/stories')}
-            submitText="Save Changes"
-            isSubmitDisabled={updateStory.isPending}
-          />
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="bg-white p-6 rounded-lg shadow-sm border">
           <div className="space-y-4">
             <FormInput
               label="Story Name"
@@ -169,6 +163,7 @@ export default function EditStory() {
                     className="w-64"
                   />
                   <button
+                    type="button"
                     onClick={handleAddTemplate}
                     disabled={!selectedTemplateId}
                     className="p-2 -mt-[1px] bg-green-500 text-white text-sm rounded border border-transparent hover:bg-green-600 disabled:opacity-50"
@@ -197,8 +192,17 @@ export default function EditStory() {
                 )}
               </div>
             </div>
+
+            <div className="flex justify-end mt-6">
+              <ButtonGroup
+                onSubmit={handleSubmit}
+                onCancel={() => navigate('/stories')}
+                submitText="Save Changes"
+                isSubmitDisabled={updateStory.isPending}
+              />
+            </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

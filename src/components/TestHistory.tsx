@@ -15,7 +15,7 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
           <div key={index} className="border rounded-lg overflow-hidden shadow-sm">
             <div
               className={`p-4 cursor-pointer flex justify-between items-center transition-colors duration-200 ${
-                entry.status === "2" ? "bg-green-50 hover:bg-green-100" : "bg-red-50 hover:bg-red-100"
+                entry.status === "2" ? "bg-green-100 hover:bg-green-200" : "bg-red-100 hover:bg-red-200"
               }`}
               onClick={() => {
                 const details = document.getElementById(`history-details-${index}`);
@@ -28,7 +28,7 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
             >
               <div className="flex items-center space-x-4">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  entry.status === "2" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                  entry.status === "2" ? "bg-green-200 text-green-900" : "bg-red-200 text-red-900"
                 }`}>
                   {entry.status === "2" ? "Passed" : "Failed"}
                 </span>
@@ -62,7 +62,7 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
                       <div className="flex justify-between items-center mb-3">
                         <span className="font-medium text-gray-900">{test.name}</span>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          test.status === "passed" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                          test.status === "passed" ? "bg-green-200 text-green-900" : "bg-red-200 text-red-900"
                         }`}>
                           {test.status === "passed" ? "Passed" : "Failed"}
                         </span>
@@ -102,7 +102,7 @@ export default function TestHistory({ storyHistory }: TestHistoryProps) {
                                 <div className="flex justify-between items-center mb-2">
                                   <span className="font-medium text-gray-900">{section.name}</span>
                                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                    section.status === "passed" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                    section.status === "passed" ? "bg-green-200 text-green-900" : "bg-red-200 text-red-900"
                                   }`}>
                                     {section.status}
                                   </span>

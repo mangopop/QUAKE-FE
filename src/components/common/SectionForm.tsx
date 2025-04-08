@@ -49,7 +49,7 @@ export default function SectionForm({
               <button
                 onClick={() => onRemoveSection(index)}
                 title="Delete"
-                className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors"
+                className="text-gray-500 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors cursor-pointer"
                 >
                 <DeleteIcon />
               </button>
