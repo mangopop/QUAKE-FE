@@ -11,7 +11,7 @@ const ENDPOINTS: BaseEndpoints = {
 const testsService = new BaseService<Test, CreateTestRequest, CreateTestRequest>(ENDPOINTS, 'tests');
 
 interface GetTestsParams extends BaseQueryParams {
-  category?: string;
+  categories?: string[];
   ownerId?: number;
 }
 

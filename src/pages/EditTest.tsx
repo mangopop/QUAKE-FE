@@ -117,17 +117,6 @@ export default function EditTest() {
               onChange={(selectedIds) => setFormData(prev => ({ ...prev, categories: selectedIds }))}
             />
 
-            <FormSelect
-              label="Template (Optional)"
-              value={formData.templateId || ""}
-              onChange={(value) => setFormData(prev => ({ ...prev, templateId: value || undefined }))}
-              options={templates?.data?.map(template => ({
-                value: template.id.toString(),
-                label: template.name
-              })) || []}
-              placeholder="Select a template..."
-            />
-
             <SectionForm
               sections={formData.sections}
               onAddSection={addSection}

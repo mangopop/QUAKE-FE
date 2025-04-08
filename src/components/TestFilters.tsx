@@ -1,5 +1,5 @@
 import React from 'react'
-import type { Owner } from '../services/types'
+import type { Owner, Category } from '../services/types'
 
 interface TestFiltersProps {
   searchQuery: string
@@ -8,7 +8,7 @@ interface TestFiltersProps {
   onCategoryChange: (category: string) => void
   selectedOwnerId: number
   onOwnerChange: (ownerId: number) => void
-  categories: string[]
+  categories: Category[]
   owners: Owner[]
   isLoading?: boolean
   searchPlaceholder?: string
@@ -52,8 +52,8 @@ const TestFilters: React.FC<TestFiltersProps> = ({
           >
             <option value="">All Categories</option>
             {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>

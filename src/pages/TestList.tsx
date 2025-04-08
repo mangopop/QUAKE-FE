@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useTests, useDeleteTest } from '../services/tests.service'
+import { useCategories } from '../services/categories.service'
 import TestFilters from '../components/TestFilters'
 import Card from '../components/Card'
 import NoResults from '../components/NoResults'
@@ -12,39 +13,43 @@ export default function TestList() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
   const [selectedOwnerId, setSelectedOwnerId] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const itemsPerPage = 10
+
+  const { data: categoriesData } = useCategories()
 
   // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery)
       setCurrentPage(1) // Reset to first page when search changes
-    }, 900)
+    }, 700)
 
     return () => clearTimeout(timer)
   }, [searchQuery])
+
+  // Reset page when category or owner filter changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedCategoryId, selectedOwnerId])
 
   const { data: testsData, isLoading, isFetching } = useTests({
     page: currentPage,
     limit: itemsPerPage,
     q: debouncedSearch,
-    category: selectedCategory,
+    categories: selectedCategoryId ? [selectedCategoryId] : undefined,
     ownerId: selectedOwnerId || undefined
   })
 
   const deleteMutation = useDeleteTest()
 
   const categories = useMemo(() => {
-    if (!testsData?.data) return []
-    const allCategories = testsData.data.flatMap((test: Test) =>
-      test.categories.map(cat => typeof cat === 'string' ? cat : cat.name)
-    )
-    return Array.from(new Set(allCategories))
-  }, [testsData?.data])
+    if (!categoriesData) return []
+    return categoriesData
+  }, [categoriesData])
 
   const owners = useMemo(() => {
     if (!testsData?.data) return []
@@ -52,6 +57,11 @@ export default function TestList() {
     return Array.from(new Set(allOwners.map((owner: Owner) => JSON.stringify(owner))))
       .map((str: string) => JSON.parse(str) as Owner)
   }, [testsData?.data])
+
+  const totalPages = useMemo(() => {
+    if (!testsData?.total) return 1
+    return Math.ceil(testsData.total / itemsPerPage)
+  }, [testsData?.total, itemsPerPage])
 
   const handleDelete = async (id: number) => {
     await deleteMutation.mutateAsync(id)
@@ -87,8 +97,8 @@ export default function TestList() {
       <TestFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
+        selectedCategory={selectedCategoryId}
+        onCategoryChange={setSelectedCategoryId}
         selectedOwnerId={selectedOwnerId}
         onOwnerChange={setSelectedOwnerId}
         categories={categories}
@@ -139,7 +149,7 @@ export default function TestList() {
 
           <Pagination
             currentPage={currentPage}
-            totalPages={testsData?.totalPages || 1}
+            totalPages={totalPages}
             isFetching={isFetching}
             onPageChange={handlePageChange}
           />
