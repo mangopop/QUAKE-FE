@@ -95,8 +95,10 @@ export default function CreateTestModal({ isOpen, onClose }: CreateTestModalProp
       });
 
       // Add the new category to the selected categories
-      setSelectedCategories(prev => [...prev, response.data.id.toString()]);
-      setNewCategoryName("");
+      if (response?.data?.id) {
+        setSelectedCategories(prev => [...prev, response.data.id.toString()]);
+        setNewCategoryName("");
+      }
     } catch (error) {
       console.error("Failed to create category:", error);
     }
